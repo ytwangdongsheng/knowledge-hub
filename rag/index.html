@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG 工作机制详解 — 图文学习笔记</title>
+<style>
+  :root {
+    --bg: #f5f0e8;
+    --card: #fffdf7;
+    --accent: #2b6cb0;
+    --accent-light: #ebf4ff;
+    --text: #2d3748;
+    --text-light: #718096;
+    --border: #e2ddd5;
+    --highlight: #fefcbf;
+    --success: #48bb78;
+    --warning: #ed8936;
+    --danger: #fc8181;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    padding: 0;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #2b6cb0 0%, #4c51bf 100%);
+    color: white;
+    padding: 40px 20px;
+    text-align: center;
+    border-radius: 0 0 24px 24px;
+    margin-bottom: 32px;
+  }
+  .header h1 { font-size: 28px; margin-bottom: 8px; }
+  .header .subtitle { font-size: 15px; opacity: 0.9; }
+  .header .meta { font-size: 13px; opacity: 0.7; margin-top: 12px; }
+
+  /* Video Player */
+  .video-section {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 28px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .video-section video {
+    width: 100%;
+    border-radius: 12px;
+    background: #000;
+  }
+  .video-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text-light);
+  }
+
+  /* Section */
+  .section {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .section h2 {
+    font-size: 22px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--accent-light);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section h3 {
+    font-size: 17px;
+    color: var(--text);
+    margin: 20px 0 10px;
+  }
+  .section p { margin-bottom: 12px; }
+
+  /* Overview Card */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .overview-item {
+    background: var(--accent-light);
+    border-radius: 12px;
+    padding: 16px;
+    border-left: 4px solid var(--accent);
+  }
+  .overview-item .label {
+    font-size: 12px;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .overview-item .value {
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  /* Flow Diagram */
+  .flow-diagram {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    margin: 20px 0;
+    padding: 20px;
+    background: #f7fafc;
+    border-radius: 12px;
+  }
+  .flow-step {
+    background: var(--accent);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 80px;
+  }
+  .flow-step.prep { background: #48bb78; }
+  .flow-step.answer { background: #ed8936; }
+  .flow-arrow { font-size: 20px; color: var(--text-light); }
+
+  /* Knowledge Cards */
+  .knowledge-card {
+    background: linear-gradient(135deg, #fffdf7 0%, #f7fafc 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 16px 0;
+    position: relative;
+  }
+  .knowledge-card .frame-img {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 8px;
+    margin: 12px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .knowledge-card .timestamp {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .knowledge-card h4 {
+    color: var(--accent);
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 30px;
+    margin: 20px 0;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent-light);
+    border-radius: 2px;
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: #f7fafc;
+    border-radius: 8px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -26px;
+    top: 16px;
+    width: 12px;
+    height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    border: 3px solid var(--accent-light);
+  }
+  .timeline-item .time {
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .timeline-item .content {
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  /* Key Points */
+  .key-point {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    background: var(--highlight);
+    border-radius: 8px;
+    margin: 10px 0;
+    border-left: 4px solid #ecc94b;
+  }
+  .key-point .icon { font-size: 20px; }
+  .key-point .text { font-size: 14px; }
+
+  /* Comparison Table */
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .comparison-table th {
+    background: var(--accent);
+    color: white;
+    padding: 12px;
+    text-align: left;
+  }
+  .comparison-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .comparison-table tr:nth-child(even) { background: #f7fafc; }
+
+  /* Action Items */
+  .action-list {
+    list-style: none;
+    margin: 16px 0;
+  }
+  .action-list li {
+    padding: 10px 12px 10px 36px;
+    position: relative;
+    margin-bottom: 8px;
+    background: #f0fff4;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  .action-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 12px;
+    color: var(--success);
+    font-weight: bold;
+  }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 2px 4px;
+  }
+  .tag-blue { background: #ebf4ff; color: #2b6cb0; }
+  .tag-green { background: #f0fff4; color: #276749; }
+  .tag-orange { background: #fffaf0; color: #c05621; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-light);
+    font-size: 13px;
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .overview-grid { grid-template-columns: 1fr; }
+    .flow-diagram { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📘 RAG 工作机制详解</h1>
+  <div class="subtitle">一个高质量知识库背后的技术全流程</div>
+  <div class="meta">
+    来源：B站 BV1JLN2z4EZQ · 时长 17:01 · 图文学习笔记
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Video Player -->
+  <div class="video-section">
+    <div style="text-align:center;padding:40px;background:#f7fafc;border-radius:12px;">
+      <div style="font-size:48px;margin-bottom:16px;">🎬</div>
+      <h3 style="margin-bottom:8px;">RAG 工作机制详解</h3>
+      <p style="color:var(--text-light);font-size:14px;">
+        原视频：<a href="https://www.bilibili.com/video/BV1JLN2z4EZQ" target="_blank" style="color:var(--accent);">B站 BV1JLN2z4EZQ</a>
+      </p>
+      <p style="color:var(--text-light);font-size:13px;margin-top:8px;">
+        视频文件较大 (123.6 MB)，请点击下方链接在 B站 观看
+      </p>
+      <a href="https://www.bilibili.com/video/BV1JLN2z4EZQ" target="_blank" 
+         style="display:inline-block;margin-top:16px;padding:10px 24px;background:var(--accent);color:white;text-decoration:none;border-radius:8px;font-weight:600;">
+        ▶ 在 B站 观看原视频
+      </a>
+    </div>
+    <div class="video-info">
+      <span>📹 时长 17:01</span>
+      <span>1920×1080</span>
+    </div>
+  </div>
+
+  <!-- 30-Second Overview -->
+  <div class="section">
+    <h2>⚡ 30 秒总览</h2>
+    <p><strong>RAG（Retrieval Augmented Generation，检索增强生成）</strong>是目前最常用的 AI 问答方案之一。它的核心思想是：<strong>先从知识库中检索相关内容，再基于这些内容生成答案</strong>——即"先检索，再生成"。</p>
+    <div class="overview-grid">
+      <div class="overview-item">
+        <div class="label">核心问题</div>
+        <div class="value">大模型不知道你的私有知识</div>
+      </div>
+      <div class="overview-item">
+        <div class="label">解决方案</div>
+        <div class="value">检索相关片段 + 送给大模型生成</div>
+      </div>
+      <div class="overview-item">
+        <div class="label">两阶段流程</div>
+        <div class="value">准备阶段（分片+索引）+ 回答阶段（召回+重排+生成）</div>
+      </div>
+      <div class="overview-item">
+        <div class="label">关键技术</div>
+        <div class="value">Embedding、向量数据库、余弦相似度、Cross-Encoder</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Learning Map -->
+  <div class="section">
+    <h2>🗺️ 学习地图</h2>
+    <p>本视频从使用场景出发，逐步拆解 RAG 的每个环节，最后从"提问前"和"提问后"两个角度复习整个链路。</p>
+    <div class="flow-diagram">
+      <div class="flow-step prep">分片 Chunking</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step prep">索引 Indexing</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step answer">召回 Retrieval</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step answer">重排 Reranking</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step answer">生成 Generation</div>
+    </div>
+    <div style="display:flex;gap:16px;justify-content:center;margin-top:12px;">
+      <span><span class="tag tag-green">准备阶段</span> 发生在用户提问前</span>
+      <span><span class="tag tag-orange">回答阶段</span> 发生在用户提问后</span>
+    </div>
+  </div>
+
+  <!-- Why RAG -->
+  <div class="section">
+    <h2>💡 为什么需要 RAG？</h2>
+    <img src="assets/frame-003.jpg" class="knowledge-card frame-img" style="max-width:100%;" alt="视频画面">
+    <p>假设你想做一个智能客服来回答公司产品相关问题。最直接的做法是把产品手册全部发给大模型——但这行不通：</p>
+    <div class="key-point">
+      <span class="icon">🚫</span>
+      <div class="text"><strong>上下文窗口有限</strong>：每个模型只能存储一定量的信息，文档过长会"读了后面忘了前面"</div>
+    </div>
+    <div class="key-point">
+      <span class="icon">💰</span>
+      <div class="text"><strong>推理成本高</strong>：每次回答都要带上一本厚厚的手册，Token 越多成本越高</div>
+    </div>
+    <div class="key-point">
+      <span class="icon">🐢</span>
+      <div class="text"><strong>推理速度慢</strong>：内容越多，模型消化时间越长，严重影响响应速度</div>
+    </div>
+    <p style="margin-top:16px;"><strong>RAG 的解决思路</strong>：不把所有内容都发给模型，而是<strong>只检索与问题相关的片段</strong>，再把这些片段和问题一起发给大模型。</p>
+  </div>
+
+  <!-- Core Concepts -->
+  <div class="section">
+    <h2>🔑 核心概念详解</h2>
+
+    <div class="knowledge-card">
+      <span class="timestamp">05:16</span>
+      <h4>📐 向量 (Vector)</h4>
+      <img src="assets/frame-006.jpg" class="frame-img" alt="向量概念">
+      <p>向量代表一个<strong>有大小、有方向</strong>的量，通常用一组数字表示。每个向量都有"维度"，维度等于数字的个数。</p>
+      <ul style="margin-left:20px;margin-top:8px;">
+        <li>一维向量：一个数字（如 <code>[3]</code>）</li>
+        <li>二维向量：两个数字（如 <code>[2, 2]</code>）</li>
+        <li>三维向量：三个数字（如 <code>[1, 2, 3]</code>）</li>
+        <li>RAG 中常用：<strong>几百到几千维</strong>，维度越大信息越丰富</li>
+      </ul>
+    </div>
+
+    <div class="knowledge-card">
+      <span class="timestamp">06:45</span>
+      <h4>🔄 Embedding（嵌入）</h4>
+      <img src="assets/frame-008.jpg" class="frame-img" alt="Embedding概念">
+      <p>Embedding 是将<strong>文本转换为向量</strong>的过程。其核心目的是：<strong>含义相近的文本，转换后的向量也相近</strong>。</p>
+      <p style="margin-top:8px;">例如：</p>
+      <ul style="margin-left:20px;">
+        <li>"马克喜欢吃水果" → 向量 <code>[1, 2]</code></li>
+        <li>"马克爱吃水果" → 向量 <code>[1, 1]</code>（非常接近↑）</li>
+        <li>"天气真好" → 向量 <code>[-3, -1]</code>（距离很远）</li>
+      </ul>
+      <p style="margin-top:8px;">Embedding 由专门的 <strong>Embedding 模型</strong>完成（不是 GPT-4o、DeepSeek 这类模型），可参考 <strong>MTEB 排行榜</strong>选择最佳模型。</p>
+    </div>
+
+    <div class="knowledge-card">
+      <span class="timestamp">08:08</span>
+      <h4>🗄️ 向量数据库</h4>
+      <img src="assets/frame-010.jpg" class="frame-img" alt="向量数据库">
+      <p>向量数据库是专门用来<strong>存储和查询向量</strong>的数据库，它做了很多优化，并提供计算向量相似度的函数。</p>
+      <p style="margin-top:8px;">存储时不仅要存<strong>向量</strong>，还要存<strong>原始文本</strong>——因为最终需要的是原始文本回答用户问题，向量只是中间结果。</p>
+    </div>
+  </div>
+
+  <!-- Detailed Process -->
+  <div class="section">
+    <h2>🔍 RAG 完整流程拆解</h2>
+
+    <h3>阶段一：数据准备（提问前）</h3>
+
+    <div class="knowledge-card">
+      <span class="timestamp">04:21</span>
+      <h4>① 分片 (Chunking)</h4>
+      <img src="assets/frame-005.jpg" class="frame-img" alt="分片">
+      <p>将文档切分为多个片段。方式有很多种：</p>
+      <ul style="margin-left:20px;">
+        <li>按字数：如 1000 字一个片段</li>
+        <li>按段落：一个段落一个片段</li>
+        <li>按章节、按页码等</li>
+      </ul>
+    </div>
+
+    <div class="knowledge-card">
+      <span class="timestamp">04:59</span>
+      <h4>② 索引 (Indexing)</h4>
+      <img src="assets/frame-007.jpg" class="frame-img" alt="索引">
+      <p>通过 Embedding 将每个片段文本转换为向量，然后将片段文本和对应向量都存储在向量数据库中。</p>
+      <p style="margin-top:8px;">过程：片段1 → Embedding → 存入数据库 → 片段2 → Embedding → 存入数据库 → ...直到所有片段处理完毕。</p>
+    </div>
+
+    <h3>阶段二：回答（提问后）</h3>
+
+    <div class="knowledge-card">
+      <span class="timestamp">09:51</span>
+      <h4>③ 召回 (Retrieval)</h4>
+      <img src="assets/frame-012.jpg" class="frame-img" alt="召回">
+      <p>搜索与用户问题相关片段的过程：</p>
+      <ol style="margin-left:20px;">
+        <li>用户问题 → Embedding 模型 → 转为向量</li>
+        <li>向量 → 向量数据库 → 查询最相似的 <strong>Top 10</strong> 片段</li>
+        <li>通过计算<strong>向量相似度</strong>来确定相关性</li>
+      </ol>
+    </div>
+
+    <div class="knowledge-card">
+      <span class="timestamp">11:56</span>
+      <h4>📊 向量相似度计算方法</h4>
+      <img src="assets/frame-014.jpg" class="frame-img" alt="相似度计算">
+      <table class="comparison-table">
+        <tr>
+          <th>方法</th>
+          <th>原理</th>
+          <th>判断标准</th>
+        </tr>
+        <tr>
+          <td><strong>余弦相似度</strong></td>
+          <td>计算两个向量夹角的余弦值</td>
+          <td>夹角越小 → 相似度越高</td>
+        </tr>
+        <tr>
+          <td><strong>欧氏距离</strong></td>
+          <td>计算两个向量之间的直线距离</td>
+          <td>距离越小 → 相似度越高</td>
+        </tr>
+        <tr>
+          <td><strong>点积</strong></td>
+          <td>考虑方向关系和长度的乘积</td>
+          <td>值越大 → 相似度越高；方向相反为负；垂直为0</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="knowledge-card">
+      <span class="timestamp">13:16</span>
+      <h4>④ 重排 (Reranking)</h4>
+      <img src="assets/frame-016.jpg" class="frame-img" alt="重排">
+      <p>从召回的 10 个片段中，再精选出 <strong>3 个</strong>与问题最相关的。</p>
+      <p style="margin-top:8px;">为什么不直接在召回阶段就挑 3 个？因为两个阶段使用的方法不同：</p>
+    </div>
+
+    <table class="comparison-table">
+      <tr>
+        <th>对比维度</th>
+        <th>召回 (Retrieval)</th>
+        <th>重排 (Reranking)</th>
+      </tr>
+      <tr>
+        <td><strong>方法</strong></td>
+        <td>向量相似度（余弦/欧氏/点积）</td>
+        <td>Cross-Encoder 模型</td>
+      </tr>
+      <tr>
+        <td><strong>成本</strong></td>
+        <td>低</td>
+        <td>高</td>
+      </tr>
+      <tr>
+        <td><strong>耗时</strong></td>
+        <td>短</td>
+        <td>长</td>
+      </tr>
+      <tr>
+        <td><strong>准确率</strong></td>
+        <td>较低</td>
+        <td>高很多</td>
+      </tr>
+      <tr>
+        <td><strong>角色</strong></td>
+        <td>粗筛（像简历筛选）</td>
+        <td>精选（像面试）</td>
+      </tr>
+    </table>
+
+    <div class="knowledge-card">
+      <span class="timestamp">15:21</span>
+      <h4>⑤ 生成 (Generation)</h4>
+      <img src="assets/frame-019.jpg" class="frame-img" alt="生成">
+      <p>将重排后的 <strong>3 个最相关片段 + 用户问题</strong>一起发给大模型（如 GPT-4o、DeepSeek），让它根据片段内容来回答用户问题。</p>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="section">
+    <h2>📅 视频时间线</h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="time">00:00 - 00:45</div>
+        <div class="content"><strong>开场介绍</strong>：什么是 RAG？为什么要了解它？</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">00:45 - 01:30</div>
+        <div class="content"><strong>使用场景</strong>：智能客服、知识助手，为什么不能直接把文档扔给模型</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">01:30 - 02:05</div>
+        <div class="content"><strong>RAG 基本流程概览</strong>：分片 → 检索 → 送给模型</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">02:05 - 02:30</div>
+        <div class="content"><strong>两大阶段</strong>：数据准备（分片+索引）与回答（召回+重排+生成）</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">02:30 - 04:21</div>
+        <div class="content"><strong>分片详解</strong>：按字数、段落、章节、页码等多种切分方式</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">04:21 - 05:16</div>
+        <div class="content"><strong>向量概念</strong>：维度、坐标表示、可视化</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">05:16 - 06:45</div>
+        <div class="content"><strong>Embedding 详解</strong>：文本转向量，语义相近则向量相近</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">06:45 - 08:08</div>
+        <div class="content"><strong>Embedding 模型与 MTEB 排行榜</strong></div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">08:08 - 09:51</div>
+        <div class="content"><strong>向量数据库</strong>：存储向量+原始文本，支持相似度查询</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">09:51 - 11:56</div>
+        <div class="content"><strong>召回阶段</strong>：问题→向量→查数据库→Top 10 片段</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">11:56 - 13:16</div>
+        <div class="content"><strong>向量相似度</strong>：余弦相似度、欧氏距离、点积三种方法</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">13:16 - 15:21</div>
+        <div class="content"><strong>重排阶段</strong>：Cross-Encoder 精选 Top 3，类比面试筛选</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">15:21 - 16:00</div>
+        <div class="content"><strong>生成阶段</strong>：片段+问题→大模型→最终答案</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time">16:00 - 17:01</div>
+        <div class="content"><strong>全流程总结回顾</strong>：串联所有环节，完整走一遍</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Questions -->
+  <div class="section">
+    <h2>❓ 复盘问题</h2>
+    <div class="key-point">
+      <span class="icon">1️⃣</span>
+      <div class="text">RAG 的全称是什么？它的核心思想用一句话怎么概括？</div>
+    </div>
+    <div class="key-point">
+      <span class="icon">2️⃣</span>
+      <div class="text">为什么不直接把整个文档发给大模型？RAG 解决了哪三个问题？</div>
+    </div>
+    <div class="key-point">
+      <span class="icon">3️⃣</span>
+      <div class="text">什么是向量？维度是什么意思？RAG 中通常用多少维的向量？</div>
+    </div>
+    <div class="key-point">
+      <span class="icon">4️⃣</span>
+      <div class="text">Embedding 的目的是什么？为什么说"含义相近的文本，向量也相近"？</div>
+    </div>
+    <div class="key-point">
+      <span class="icon">5️⃣</span>
+      <div class="text">向量数据库为什么要同时存储向量和原始文本？</div>
+    </div>
+    <div class="key-point">
+      <span class="icon">6️⃣</span>
+      <div class="text">召回和重排有什么区别？为什么需要两个阶段？（提示：成本 vs 准确率）</div>
+    </div>
+    <div class="key-point">
+      <span class="icon">7️⃣</span>
+      <div class="text">三种向量相似度计算方法分别是什么？各自的判断标准是什么？</div>
+    </div>
+    <div class="key-point">
+      <span class="icon">8️⃣</span>
+      <div class="text">Cross-Encoder 模型用在哪个阶段？为什么它比向量相似度更准确？</div>
+    </div>
+  </div>
+
+  <!-- Action Items -->
+  <div class="section">
+    <h2>✅ 行动清单</h2>
+    <ul class="action-list">
+      <li>理解 RAG 的完整链路：分片 → 索引 → 召回 → 重排 → 生成</li>
+      <li>掌握三个核心概念：向量、Embedding、向量数据库</li>
+      <li>了解三种向量相似度计算方法：余弦相似度、欧氏距离、点积</li>
+      <li>理解"召回+重排"两阶段设计的原因：成本与准确率的平衡</li>
+      <li>查看 MTEB 排行榜，了解当前最佳 Embedding 模型</li>
+      <li>尝试使用 LangChain / LlamaIndex 等框架构建一个简单的 RAG 应用</li>
+      <li>思考：分片策略（按字数 vs 按段落 vs 按语义）对效果的影响</li>
+    </ul>
+  </div>
+
+  <!-- Glossary -->
+  <div class="section">
+    <h2>📖 术语表</h2>
+    <table class="comparison-table">
+      <tr><th>术语</th><th>英文</th><th>解释</th></tr>
+      <tr><td><strong>RAG</strong></td><td>Retrieval Augmented Generation</td><td>检索增强生成，先检索再生成的 AI 问答方案</td></tr>
+      <tr><td><strong>向量</strong></td><td>Vector / Embedding</td><td>一组数字表示的有大小有方向的量</td></tr>
+      <tr><td><strong>嵌入</strong></td><td>Embedding</td><td>将文本转换为向量的过程</td></tr>
+      <tr><td><strong>分片</strong></td><td>Chunking</td><td>将文档切分为多个小片段</td></tr>
+      <tr><td><strong>向量数据库</strong></td><td>Vector Database</td><td>专门存储和查询向量的数据库</td></tr>
+      <tr><td><strong>召回</strong></td><td>Retrieval</td><td>从所有片段中粗筛出 Top K 相关片段</td></tr>
+      <tr><td><strong>重排</strong></td><td>Reranking</td><td>用更精确的模型从召回结果中精选</td></tr>
+      <tr><td><strong>Cross-Encoder</strong></td><td>Cross-Encoder</td><td>用于重排的高准确率模型</td></tr>
+      <tr><td><strong>余弦相似度</strong></td><td>Cosine Similarity</td><td>通过夹角余弦值衡量向量相似度</td></tr>
+      <tr><td><strong>欧氏距离</strong></td><td>Euclidean Distance</td><td>两个向量之间的直线距离</td></tr>
+      <tr><td><strong>点积</strong></td><td>Dot Product</td><td>考虑方向和长度的向量运算</td></tr>
+      <tr><td><strong>MTEB</strong></td><td>Massive Text Embedding Benchmark</td><td>Embedding 模型评测排行榜</td></tr>
+      <tr><td><strong>上下文窗口</strong></td><td>Context Window</td><td>模型一次能处理的最大 Token 数</td></tr>
+    </table>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p>📝 本笔记由 AI 根据视频转录内容自动生成 · 关键帧提取自视频</p>
+  <p>原始视频：<a href="https://www.bilibili.com/video/BV1JLN2z4EZQ" target="_blank">B站 BV1JLN2z4EZQ</a></p>
+</div>
+
+</body>
+</html>
