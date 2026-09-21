@@ -11,6 +11,7 @@
 | 主题 | 内容 | 在线阅读 |
 |------|------|----------|
 | **RAG 工作机制详解** | 检索增强生成的完整技术流程：分片 → 索引 → 召回 → 重排 → 生成 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/rag/) |
+| **AI 编程全流程** | 如何用 AI 稳定交付高质量产品：5 步工作流 + 3 个原则 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/ai-coding-workflow/) |
 
 > 更多主题持续补充中。
 
@@ -27,6 +28,10 @@ knowledge-hub/
 │   ├── README.md        # 主题说明
 │   ├── index.html       # 图文笔记正文
 │   └── assets/          # 配图
+├── ai-coding-workflow/  # 主题：AI 编程全流程
+│   ├── README.md        # 主题说明
+│   ├── index.html       # 图文笔记正文
+│   └── frames/          # 配图
 └── <主题名>/            # 后续主题按同样结构新增
     ├── README.md
     ├── index.html

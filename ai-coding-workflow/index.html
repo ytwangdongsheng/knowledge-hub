@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 编程全流程 — 如何用 AI 稳定交付高质量产品</title>
+<meta name="description" content="AI 编程完整工作流：从环境搭建、产品设计、技术设计到实现与验证，5 步交付高质量产品">
+<style>
+  :root {
+    --bg: #fafaf7;
+    --card: #ffffff;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --orange: #d97706;
+    --orange-light: #fef3c7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --purple: #7c3aed;
+    --purple-light: #ede9fe;
+    --text: #1f2937;
+    --text-dim: #6b7280;
+    --text-dimmer: #9ca3af;
+    --border: #e5e7eb;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+    color: white;
+    padding: 60px 24px 50px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 800;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+  .hero p {
+    font-size: clamp(15px, 2.5vw, 18px);
+    opacity: 0.9;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .hero .meta {
+    margin-top: 20px;
+    font-size: 14px;
+    opacity: 0.75;
+  }
+
+  /* Layout */
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
+  section { padding: 48px 0; }
+  section + section { border-top: 1px solid var(--border); }
+
+  /* Section headers */
+  .sec-head { margin-bottom: 28px; }
+  .sec-head h2 {
+    font-size: clamp(22px, 4vw, 28px);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .sec-head h2 .emoji { font-size: 1.2em; }
+  .sec-head p { color: var(--text-dim); font-size: 15px; }
+
+  /* Timestamp badge */
+  .ts {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--accent-light);
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card p, .card li { font-size: 15px; color: var(--text); }
+  .card p + p { margin-top: 10px; }
+  .card ul { padding-left: 20px; margin-top: 10px; }
+  .card li + li { margin-top: 6px; }
+
+  /* Highlight boxes */
+  .highlight {
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin: 16px 0;
+  }
+  .highlight.blue { background: var(--accent-light); border-left: 4px solid var(--accent); }
+  .highlight.green { background: var(--green-light); border-left: 4px solid var(--green); }
+  .highlight.orange { background: var(--orange-light); border-left: 4px solid var(--orange); }
+  .highlight.red { background: var(--red-light); border-left: 4px solid var(--red); }
+  .highlight.purple { background: var(--purple-light); border-left: 4px solid var(--purple); }
+  .highlight strong { display: block; margin-bottom: 6px; }
+
+  /* Images */
+  .img-block {
+    margin: 20px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+  .img-block img {
+    width: 100%;
+    display: block;
+  }
+  .img-block .cap {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-dim);
+    background: #f9fafb;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin: 24px 0;
+  }
+  .flow-item {
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 14px 20px;
+    text-align: center;
+    min-width: 120px;
+    box-shadow: var(--shadow);
+  }
+  .flow-item .num {
+    display: inline-block;
+    width: 28px; height: 28px;
+    line-height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .flow-item .label {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--text-dimmer);
+    font-size: 20px;
+  }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  tr:hover td { background: #fafafa; }
+
+  /* Timeline */
+  .timeline { margin: 20px 0; }
+  .tl-item {
+    display: flex;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .tl-item:last-child { border-bottom: none; }
+  .tl-time {
+    flex-shrink: 0;
+    width: 100px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    padding-top: 2px;
+  }
+  .tl-content { flex: 1; }
+  .tl-content strong { display: block; margin-bottom: 4px; }
+  .tl-content p { font-size: 14px; color: var(--text-dim); }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--text-dimmer);
+    font-size: 13px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 640px) {
+    .hero { padding: 40px 16px 36px; }
+    section { padding: 32px 0; }
+    .card { padding: 18px; }
+    .flow { flex-direction: column; align-items: center; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <h1>🤖 AI 编程全流程</h1>
+  <p>如何用 AI 稳定交付一个高质量的产品 —— 从环境搭建到人工验证的完整工作流</p>
+  <div class="meta">来源：B站 BV154426xEha · 时长 24:54 · UP主：马克的技术工作坊</div>
+</div>
+
+<!-- 30 秒总览 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">⚡</span> 30 秒总览</h2>
+    <p>AI 编程不是"发指令就完了"，而是一套完整的工作流</p>
+  </div>
+
+  <div class="card">
+    <p>很多人以为用 AI 编程就是给 Codex / Claude Code 发一条指令，然后等它把软件做出来。但实际上，<strong>AI 做出来的效果往往跟预期相差甚远</strong>，还可能有大量 Bug。</p>
+    <p>这个视频分享了一套经过验证的 <strong>AI 编程工作流</strong>，通过 5 个步骤，让你能够稳定交付高质量的产品：</p>
+    
+    <div class="flow">
+      <div class="flow-item"><div class="num">1</div><div class="label">环境搭建</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item"><div class="num">2</div><div class="label">产品设计</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item"><div class="num">3</div><div class="label">技术设计</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item"><div class="num">4</div><div class="label">产品实现</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item"><div class="num">5</div><div class="label">人工验证</div></div>
+    </div>
+
+    <div class="highlight green">
+      <strong>💡 核心思想</strong>
+      你参与得越多，对结果的把控越强；但投入的时间也越多。关键在于根据需求的复杂度和重要性，找到适合自己的平衡点。
+    </div>
+  </div>
+</section>
+
+<!-- 选择编程助手 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🛠️</span> 选择编程助手</h2>
+    <p>选一款适合自己的 AI 编程工具</p>
+  </div>
+
+  <div class="ts">01:12</div>
+  
+  <div class="img-block">
+    <img src="frames/frame-01-choose-assistant.jpg" alt="选择编程助手">
+    <div class="cap">目前主流的 AI 编程助手对比</div>
+  </div>
+
+  <div class="card">
+    <h3>主流选项</h3>
+    <table>
+      <tr><th>工具</th><th>特点</th><th>适合人群</th></tr>
+      <tr><td><strong>Codex</strong></td><td>功能最完善，OpenAI 出品，支持多种模型</td><td>大多数用户首选</td></tr>
+      <tr><td><strong>Claude Code</strong></td><td>Anthropic 出品，擅长长上下文</td><td>需要处理大项目</td></tr>
+      <tr><td><strong>OpenCode</strong></td><td>开源方案</td><td>喜欢自定义</td></tr>
+      <tr><td><strong>PyCode</strong></td><td>Python 专用</td><td>Python 开发者</td></tr>
+    </table>
+
+    <div class="highlight blue">
+      <strong>💡 关于 Codex</strong>
+      Codex 是一个通用的编程助手，不跟特定模型绑定。你可以通过订阅 ChatGPT Plus 使用 GPT 模型，也可以接入 DeepSeek、GLM、Kimi 等国产模型。
+    </div>
+  </div>
+</section>
+
+<!-- 环境搭建 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🏗️</span> 环境搭建</h2>
+    <p>工欲善其事，必先利其器</p>
+  </div>
+
+  <div class="ts">02:27</div>
+
+  <div class="img-block">
+    <img src="frames/frame-02-env-setup.jpg" alt="环境搭建">
+    <div class="cap">初始化 Git 仓库，建立版本管理</div>
+  </div>
+
+  <div class="card">
+    <h3>第一步：初始化 Git</h3>
+    <p>让 AI 帮你把项目目录初始化为 Git 仓库。Git 是版本管理工具，每做完一个功能就保存一个版本，这样代码改乱了也能一键回退。</p>
+    
+    <div class="highlight green">
+      <strong>📌 为什么必须用 Git？</strong>
+      AI 写代码不可能每次都完全正确，有时会改坏原本正常的功能。有了 Git，你可以随时回退到之前的可用状态，不用担心代码越改越乱。
+    </div>
+  </div>
+
+  <div class="ts">04:29</div>
+
+  <div class="img-block">
+    <img src="frames/frame-03-agents-md.jpg" alt="agents.md">
+    <div class="cap">创建 agents.md 文件，给 AI 立规矩</div>
+  </div>
+
+  <div class="card">
+    <h3>第二步：创建 agents.md</h3>
+    <p>agents.md 相当于给 AI 的项目说明书，每次开启新会话时 AI 会优先读取它，快速了解项目背景和开发规范。</p>
+    
+    <p><strong>视频中设置的两条核心规则：</strong></p>
+    <ul>
+      <li><strong>规则一：</strong>每次改动后必须创建一个对应的 Git Commit，方便追踪和回滚</li>
+      <li><strong>规则二：</strong>每次改动后必须编写或更新测试，交付前确保所有测试通过</li>
+    </ul>
+
+    <div class="highlight orange">
+      <strong>⚠️ 规则二的意义</strong>
+      我们不希望 AI 写完代码就直接交差，而是希望它自己先跑一遍测试，发现问题就继续修，直到确认没问题了再告诉我们。这样可以提前过滤掉很多明显的 Bug。
+    </div>
+  </div>
+</section>
+
+<!-- 产品设计 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📋</span> 产品设计</h2>
+    <p>明确要做什么，不做什么</p>
+  </div>
+
+  <div class="ts">06:29</div>
+
+  <div class="img-block">
+    <img src="frames/frame-04-product-design.jpg" alt="产品设计">
+    <div class="cap">与 AI 讨论 MVP 版本的功能范围</div>
+  </div>
+
+  <div class="card">
+    <h3>MVP 思维</h3>
+    <p><strong>MVP = Minimal Viable Product（最小可用产品）</strong></p>
+    <p>第一版只做最核心、最必要的功能，先把产品主流程跑通，其他功能以后慢慢加。</p>
+    
+    <div class="highlight green">
+      <strong>💡 为什么要做 MVP？</strong>
+      用较低的成本快速验证产品方向。如果一开始就把功能铺得太大，后面发现方向不对，很多工作就白做了。
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>与 AI 讨论产品方案</h3>
+    <p>不要直接让 AI 开始写代码，而是先跟它讨论产品设计：</p>
+    <ul>
+      <li>告诉 AI 你想做什么，问它 MVP 版本应该包含哪些功能</li>
+      <li>仔细审视 AI 的建议，把不需要的功能砍掉（如深色主题、书签等）</li>
+      <li>把讨论结果整理成一份产品设计文档，作为后续开发的提纲</li>
+    </ul>
+
+    <div class="highlight blue">
+      <strong>📝 提示</strong>
+      让 AI 整理文档时，明确告诉它"不用太详细"，否则内容太多看起来也累。我们只需要保证大体方向跟预期一致就行。
+    </div>
+  </div>
+
+  <div class="ts">11:27</div>
+
+  <div class="img-block">
+    <img src="frames/frame-05-demo.jpg" alt="Demo">
+    <div class="cap">Demo 示例：只有前端界面，数据是模拟的</div>
+  </div>
+
+  <div class="card">
+    <h3>什么时候需要做 Demo？</h3>
+    <p>Demo 是一个可以操作的前端界面，后端逻辑还没实现，数据是模拟的。主要目的是让用户体验界面交互和操作流程。</p>
+    
+    <p><strong>做 Demo 的两个好处：</strong></p>
+    <ul>
+      <li><strong>提前验证产品设计：</strong>很多东西光靠文字很难想象，亲手操作一下可能就会发现之前没想到的问题</li>
+      <li><strong>让后续实现更精确：</strong>Demo 可以直观地告诉 AI 最终想要的产品大概是什么样，这是文字描述很难做到的</li>
+    </ul>
+
+    <div class="highlight purple">
+      <strong>🎯 判断标准</strong>
+      看产品的<strong>后端实现成本</strong>。如果后端复杂（如涉及文档处理、搜索、模型调用等），建议先做 Demo；如果后端简单（如只是读取 TXT 文件），可以直接做产品。
+    </div>
+  </div>
+</section>
+
+<!-- 技术设计 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">⚙️</span> 技术设计</h2>
+    <p>确定技术方案，尤其是技术栈和架构</p>
+  </div>
+
+  <div class="ts">14:47</div>
+
+  <div class="img-block">
+    <img src="frames/frame-06-tech-design.jpg" alt="技术设计">
+    <div class="cap">与 AI 讨论技术栈选择</div>
+  </div>
+
+  <div class="card">
+    <h3>讨论技术栈</h3>
+    <p>产品设计完成后，新开一个会话（让讨论更聚焦），跟 AI 讨论技术方案：</p>
+    <ul>
+      <li>把产品设计文档给 AI 看，问它用什么技术栈比较合适</li>
+      <li>如果你有倾向（如听说 Electron 适合），可以告诉 AI 让它帮你分析</li>
+      <li>AI 会给出建议的技术栈，同时说明优缺点</li>
+    </ul>
+
+    <div class="highlight blue">
+      <strong>📌 视频中的选择</strong>
+      Electron + React + TypeScript + Vite + ElectronPort<br>
+      适合做跨平台桌面应用（Windows / macOS / Linux）
+    </div>
+
+    <p>讨论确认后，让 AI 写一份技术方案文档，放在 docs 文件夹里，作为后续编码的参考。</p>
+  </div>
+</section>
+
+<!-- 产品实现 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">💻</span> 产品实现</h2>
+    <p>让 AI 写代码，并给它自测的能力</p>
+  </div>
+
+  <div class="ts">17:20</div>
+
+  <div class="img-block">
+    <img src="frames/frame-07-implementation.jpg" alt="产品实现">
+    <div class="cap">安装 computer use 和 chrome 插件，让 AI 能自己验证</div>
+  </div>
+
+  <div class="card">
+    <h3>给 AI 自测的能力</h3>
+    <p>在正式让 AI 写代码之前，先安装必要的插件，让 AI 能够自己验证结果：</p>
+    
+    <table>
+      <tr><th>插件</th><th>作用</th></tr>
+      <tr><td><strong>computer use</strong></td><td>让 AI 能够操作电脑（点击、输入等）</td></tr>
+      <tr><td><strong>chrome</strong></td><td>让 AI 能够查看 Chrome 页面</td></tr>
+    </table>
+
+    <div class="highlight red">
+      <strong>⚠️ 为什么这很重要？</strong>
+      给 AI 一个能够验证的环境是非常重要的事情。否则 AI 很容易就会写出一堆 Bug —— 毕竟它没法验证。如果人写代码没法验证，估计也会有一堆 Bug。
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>让 AI 实现产品</h3>
+    <p>新开一个会话，把产品设计文档和技术方案文档都给 AI 看，然后让它根据要求实现产品。</p>
+    <p>AI 写完代码后，会自动运行测试，确保符合 agents.md 里的要求（每次改动后必须测试通过才能交付）。</p>
+  </div>
+</section>
+
+<!-- 人工验证 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🧪</span> 人工验证</h2>
+    <p>亲自上手体验，发现问题就让 AI 修改</p>
+  </div>
+
+  <div class="ts">19:22</div>
+
+  <div class="img-block">
+    <img src="frames/frame-08-verify.jpg" alt="人工验证">
+    <div class="cap">运行产品，发现报错后让 AI 修复</div>
+  </div>
+
+  <div class="card">
+    <h3>为什么必须人工验证？</h3>
+    <p>AI 的自测只能尽可能提高代码的可靠性，帮它先发现一些明显的问题，但<strong>不能保证最终交付出来的产品就一定没有 Bug</strong>。</p>
+    <p>真正用起来怎么样，还是得我们自己亲自验证之后才知道。</p>
+
+    <div class="highlight orange">
+      <strong>📌 视频中的实例</strong>
+      运行产品后直接报了一个错："操作失败，请稍后重试"。AI 即使自己能验证，也未必完全可靠。把错误信息反馈给 AI，让它修复，再测试，直到完全正常。
+    </div>
+  </div>
+</section>
+
+<!-- 总结 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📊</span> 总结回顾</h2>
+    <p>5 步标准流程 + 3 个不能省的原则</p>
+  </div>
+
+  <div class="ts">20:23</div>
+
+  <div class="img-block">
+    <img src="frames/frame-09-summary.jpg" alt="总结">
+    <div class="cap">AI 编程 5 步标准流程</div>
+  </div>
+
+  <div class="card">
+    <h3>5 步标准流程</h3>
+    <table>
+      <tr><th>步骤</th><th>内容</th><th>说明</th></tr>
+      <tr><td><strong>1. 环境搭建</strong></td><td>初始化 Git、写 agents.md</td><td>一次性工作，后续复用</td></tr>
+      <tr><td><strong>2. 产品设计</strong></td><td>明确做什么、不做什么，可选做 Demo</td><td>每个新功能都要做</td></tr>
+      <tr><td><strong>3. 技术设计</strong></td><td>确定技术栈和架构</td><td>确保整体方向没问题</td></tr>
+      <tr><td><strong>4. 产品实现</strong></td><td>AI 写代码 + 自测</td><td>给 AI 验证环境</td></tr>
+      <tr><td><strong>5. 人工验证</strong></td><td>亲自体验，发现问题让 AI 改</td><td>直到完全符合预期</td></tr>
+    </table>
+
+    <div class="highlight blue">
+      <strong>💡 灵活调整</strong>
+      这 5 步不是死板的流程。简单且不重要的需求，可以跳过产品设计和技设设计，直接让 AI 实现然后验证；复杂且重要的需求，建议走完全部 5 步。
+    </div>
+  </div>
+
+  <div class="ts">23:14</div>
+
+  <div class="img-block">
+    <img src="frames/frame-10-principles.jpg" alt="三个原则">
+    <div class="cap">三个不能省的原则</div>
+  </div>
+
+  <div class="card">
+    <h3>🔒 三个不能省的原则</h3>
+    
+    <div class="highlight green">
+      <strong>1. 必须有版本管理工具</strong>
+      用 Git 管理代码，每完成一个功能保存一个版本。出了问题能方便地回退到之前正常的状态。条件允许的话，把代码同步到 GitHub 之类的远端仓库，防止本地代码丢失。
+    </div>
+
+    <div class="highlight green">
+      <strong>2. 必须给 AI 自测的能力</strong>
+      很多人只是让 AI 写代码，但不给它验证的环境，结果自己就沦为了测试员，来来会会帮 AI 找 Bug，极其浪费时间。应该把相关的工具和插件开放给 AI，让它自己写自己测。
+    </div>
+
+    <div class="highlight green">
+      <strong>3. 必须进行人工验证</strong>
+      AI 自测再充分，也不可能把所有问题都覆盖到。像交互体验、或者一些不容易想到的边界情况，就很容易被漏掉。产品到底好不好用，最终还是要自己试一遍才知道。
+    </div>
+  </div>
+</section>
+
+<!-- 视频时间线 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📅</span> 视频时间线</h2>
+    <p>快速定位感兴趣的内容</p>
+  </div>
+
+  <div class="card">
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-time">00:00 - 00:42</div>
+        <div class="tl-content">
+          <strong>开场：为什么需要工作流？</strong>
+          <p>直接给 AI 发指令的问题：效果跟预期不符、Bug 多</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">00:42 - 01:12</div>
+        <div class="tl-content">
+          <strong>视频内容预告</strong>
+          <p>带你从头做一个电子书阅读器，完整走一遍流程</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">01:12 - 02:27</div>
+        <div class="tl-content">
+          <strong>选择编程助手</strong>
+          <p>Codex、Claude Code、OpenCode 等选项对比</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">02:27 - 04:29</div>
+        <div class="tl-content">
+          <strong>环境搭建：Git 初始化</strong>
+          <p>创建项目文件夹、初始化 Git 仓库</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">04:29 - 06:29</div>
+        <div class="tl-content">
+          <strong>环境搭建：agents.md</strong>
+          <p>给 AI 立规矩：每次改动必须 commit、必须测试</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">06:29 - 11:27</div>
+        <div class="tl-content">
+          <strong>产品设计：MVP 与讨论</strong>
+          <p>确定第一版做什么、不做什么，整理产品设计文档</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">11:27 - 14:47</div>
+        <div class="tl-content">
+          <strong>产品设计：Demo 的作用</strong>
+          <p>什么时候需要做 Demo、Demo 的好处</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">14:47 - 17:20</div>
+        <div class="tl-content">
+          <strong>技术设计</strong>
+          <p>讨论技术栈（Electron + React + TypeScript）</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">17:20 - 19:22</div>
+        <div class="tl-content">
+          <strong>产品实现</strong>
+          <p>安装 computer use 和 chrome 插件，让 AI 实现产品</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">19:22 - 20:23</div>
+        <div class="tl-content">
+          <strong>人工验证</strong>
+          <p>运行产品、发现报错、让 AI 修复</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">20:23 - 23:14</div>
+        <div class="tl-content">
+          <strong>总结：5 步流程</strong>
+          <p>回顾完整流程，讨论灵活调整的方式</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-time">23:14 - 24:54</div>
+        <div class="tl-content">
+          <strong>三个不能省的原则 + 结语</strong>
+          <p>Git、AI 自测、人工验证</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 术语表 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📖</span> 术语表</h2>
+    <p>视频中提到的关键概念</p>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>术语</th><th>英文</th><th>解释</th></tr>
+      <tr><td><strong>MVP</strong></td><td>Minimal Viable Product</td><td>最小可用产品，第一版只做核心功能</td></tr>
+      <tr><td><strong>Git</strong></td><td>Git</td><td>版本管理工具，保存代码快照，支持回退</td></tr>
+      <tr><td><strong>Commit</strong></td><td>Commit</td><td>Git 中的一次提交，保存当前代码状态</td></tr>
+      <tr><td><strong>agents.md</strong></td><td>agents.md</td><td>给 AI 的项目说明书，定义开发规范</td></tr>
+      <tr><td><strong>Demo</strong></td><td>Demo</td><td>可操作的前端界面，后端数据是模拟的</td></tr>
+      <tr><td><strong>Electron</strong></td><td>Electron</td><td>用 Web 技术开发桌面应用的框架</td></tr>
+      <tr><td><strong>computer use</strong></td><td>computer use</td><td>Codex 插件，让 AI 能操作电脑</td></tr>
+      <tr><td><strong>GitHub</strong></td><td>GitHub</td><td>远端代码仓库，防止本地代码丢失</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <p>📝 本笔记由 AI 根据视频转录内容自动生成 · 关键帧提取自视频</p>
+  <p>原始视频：<a href="https://www.bilibili.com/video/BV154426xEha" target="_blank">B站 BV154426xEha</a> · UP主：马克的技术工作坊</p>
+</footer>
+
+</body>
+</html>
