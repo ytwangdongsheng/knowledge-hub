@@ -12,6 +12,7 @@
 |------|------|----------|
 | **RAG 工作机制详解** | 检索增强生成的完整技术流程：分片 → 索引 → 召回 → 重排 → 生成 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/rag/) |
 | **AI 编程全流程** | 如何用 AI 稳定交付高质量产品：5 步工作流 + 3 个原则 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/ai-coding-workflow/) |
+| **一文讲透 Agent Skill** | 定义、目录结构、原理与实战思路：渐进式披露机制 + 与 MCP 的差异 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/agent-skill/) |
 
 > 更多主题持续补充中。
 
@@ -32,6 +33,10 @@ knowledge-hub/
 │   ├── README.md        # 主题说明
 │   ├── index.html       # 图文笔记正文
 │   └── frames/          # 配图
+├── agent-skill/         # 主题：一文讲透 Agent Skill
+│   ├── README.md        # 主题说明
+│   ├── index.html       # 图文笔记正文
+│   └── assets/          # 配图
 └── <主题名>/            # 后续主题按同样结构新增
     ├── README.md
     ├── index.html
