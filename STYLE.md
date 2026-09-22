@@ -17,8 +17,9 @@
 | `ai-coding-workflow/` | **B v1** | 换了一套命名体系（`.wrap` / `.hero` / `.card`） |
 | `agent-skill/` | **B v2** | 追加 `.compare`、`.layers` |
 | `token-embedding/` | **B v3** | 追加 `.timeline`、`.overview-grid` |
+| `mcp-basics/` `mcp-advanced/` `harness-engineering/` `rag-python/` | **B v3** | 新增主题，CSS 与参考实装逐字节一致 |
 
-**Template B v3 是本规范的基准，四个主题现已全部统一。** 详见 §7。
+**Template B v3 是本规范的基准，八个主题现已全部统一。** 详见 §7。
 
 从本文件开始，格式不再依赖「复制上一份制品」。
 
@@ -519,7 +520,7 @@ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
 
 ## 7. 模板统一状态
 
-**四个主题已全部统一到 Template B v3**，不再存在偏差：
+**八个主题已全部统一到 Template B v3**，不再存在偏差：
 
 | 主题 | 状态 |
 |------|------|
@@ -527,6 +528,10 @@ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
 | `ai-coding-workflow/` | ✅ B v1 起即符合 |
 | `agent-skill/` | ✅ B v2 |
 | `token-embedding/` | ✅ B v3（参考实装） |
+| `mcp-basics/` | ✅ B v3 |
+| `mcp-advanced/` | ✅ B v3 |
+| `harness-engineering/` | ✅ B v3 |
+| `rag-python/` | ✅ B v3 |
 
 迁移方式：把 `token-embedding/index.html` 的 `<style>` 块**原样注入**（保证与规范逐字节一致），正文按下面的映射改写。
 

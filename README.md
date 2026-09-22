@@ -11,6 +11,7 @@
 | 主题 | 内容 | 在线阅读 |
 |------|------|----------|
 | **RAG 工作机制详解** | 检索增强生成的完整技术流程：分片 → 索引 → 召回 → 重排 → 生成 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/rag/) |
+| **使用 Python 构建 RAG 系统** | RAG 实战篇：手写分片、Embedding 索引、ChromaDB、召回、重排、生成 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/rag-python/) |
 | **AI 编程全流程** | 如何用 AI 稳定交付高质量产品：5 步工作流 + 3 个原则 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/ai-coding-workflow/) |
 | **一文讲透 Agent Skill** | 定义、目录结构、原理与实战思路：渐进式披露机制 + 与 MCP 的差异 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/agent-skill/) |
 | **Token 与 Embedding** | LLM 与 RAG 的数据处理机制：从编号到语义、Embedding 实现、对比学习 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/token-embedding/) |
@@ -34,6 +35,10 @@ knowledge-hub/
 ├── build_style_spec.py  # 从参考实装抽取 CSS → 注入 STYLE.md
 ├── verify_style_spec.py # 校验 STYLE.md 的 CSS 与实装逐字节一致
 ├── rag/                 # 主题：RAG 工作机制详解
+│   ├── README.md        # 主题说明
+│   ├── index.html       # 图文笔记正文
+│   └── assets/          # 配图
+├── rag-python/          # 主题：使用 Python 构建 RAG 系统
 │   ├── README.md        # 主题说明
 │   ├── index.html       # 图文笔记正文
 │   └── assets/          # 配图
@@ -85,7 +90,7 @@ knowledge-hub/
 - 本仓库为公开知识库，内容基于公开资料整理与二次加工
 - 笔记中保留原始来源链接，便于追溯
 - 图文配图来源见各主题 `README.md`
-- **笔记格式由 [`STYLE.md`](STYLE.md) 统一约定** —— 六个主题已全部统一到 Template B v3
+- **笔记格式由 [`STYLE.md`](STYLE.md) 统一约定** —— 八个主题已全部统一到 Template B v3
 
 ## 相关文档
 
