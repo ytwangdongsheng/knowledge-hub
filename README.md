@@ -25,6 +25,7 @@
 knowledge-hub/
 ├── README.md            # 本文件：总索引
 ├── STYLE.md             # 📐 笔记格式规范（新增主题前必读）
+├── MAKING-OF.md         # 🛠️ 制作流程文档：工具链、六阶段全过程、经验教训
 ├── index.html           # 门户首页（GitHub Pages 入口）
 ├── .nojekyll            # 关闭 Jekyll 处理
 ├── build_style_spec.py  # 从参考实装抽取 CSS → 注入 STYLE.md
@@ -69,7 +70,14 @@ knowledge-hub/
 - 本仓库为公开知识库，内容基于公开资料整理与二次加工
 - 笔记中保留原始来源链接，便于追溯
 - 图文配图来源见各主题 `README.md`
-- **笔记格式由 [`STYLE.md`](STYLE.md) 统一约定**；`rag/` 是格式统一前的早期版本，见 `STYLE.md` §7
+- **笔记格式由 [`STYLE.md`](STYLE.md) 统一约定** —— 四个主题已全部统一到 Template B v3
+
+## 相关文档
+
+| 文档 | 面向 | 内容 |
+|------|------|------|
+| [`STYLE.md`](STYLE.md) | 写笔记的人 | 格式契约：色板、组件、页面骨架、发布前检查 |
+| [`MAKING-OF.md`](MAKING-OF.md) | 想复刻这套流程的人 | 工具链、六个阶段的完整制作过程、关键技术决策、踩过的坑 |
 
 ## 维护格式规范
 

@@ -17,9 +17,13 @@
 
 - **GitHub 仓库**：https://github.com/ytwangdongsheng/knowledge-hub
 - **在线阅读**：https://ytwangdongsheng.github.io/knowledge-hub/
-- **当前主题**：
-  - RAG 工作机制详解
-  - AI 编程全流程
+- **当前主题**（4 个）：
+  - RAG 工作机制详解（视频 · 17:01）
+  - AI 编程全流程（视频 · 24:54）
+  - 一文讲透 Agent Skill（PDF 文章 · 21 页）
+  - 15 分钟弄懂 Token 和 Embedding（视频 · 15:17）
+- **格式规范**：`STYLE.md`（含自动抽取与校验工具）
+- **本地工作区**：`E:\个人知识积累`
 
 ---
 
@@ -33,16 +37,20 @@
 | **ffmpeg** | 提取音频、提取关键帧 | 手动安装到 `E:\python\Scripts\` |
 | **faster-whisper** | 语音转文字（本地转录） | `pip install faster-whisper` |
 | **Pillow** | 生成图片、卡片 | `pip install Pillow` |
+| **pymupdf** | 解析 PDF 正文与内嵌图片 | `pip install pymupdf` |
 | **gh CLI** | GitHub 命令行工具 | `winget install GitHub.cli` |
 | **git** | 版本控制 | 系统自带 |
 
 ### 2.2 DSH Skills 使用
 
-| Skill | 用途 |
-|-------|------|
-| `z-video-downloader` | 视频下载 |
-| `z-video-study-webpage-qwen` | 视频学习笔记生成 |
-| `fireworks-tech-graph` | 技术图表生成（尝试过，最终未使用） |
+| Skill | 用途 | 实际用法 |
+|-------|------|----------|
+| `z-video-downloader` | 视频下载 | ✅ 四篇视频全部用它下载 |
+| `z-video-study-webpage-qwen` | 视频学习笔记 | ⚠️ 只借用了**流程思路**（转录 + 抽帧）；它自带的 HTML 生成器与最终样式完全不同，未使用 |
+| `z-smart-xparse` | 文档解析 | ❌ 未用成：安装脚本 404，目录里也没有可执行文件，改用 pymupdf |
+| `fireworks-tech-graph` | 技术图表生成 | ❌ 尝试过，最终未使用 |
+
+> **关于 skill 与格式的关系**：knowledge-hub 的笔记格式**不是任何 skill 定义的**。`z-video-study-webpage-qwen` 目录里没有任何 HTML 模板文件，SKILL.md 里那句「沿用当前 study-summary.html 的视觉模板」是一条断掉的引用。真实来源是第一篇的成品文件，详见第四章。
 
 ### 2.3 部署工具
 
@@ -436,11 +444,224 @@ git commit -m "docs: 新增 AI 编程全流程主题"
 git push
 ```
 
+### 阶段五：第一个文章笔记（Agent Skill）
+
+前四篇输入都是视频，这一篇输入是一份 PDF 文章 —— **管线完全不同**。
+
+#### 3.16 为什么需要新管线
+
+| | 视频管线 | 文章管线 |
+|---|---|---|
+| 取正文 | faster-whisper 转录音频 | 直接抽取 PDF 文本层 |
+| 取配图 | ffmpeg 按时间点抽帧 | 抽取 PDF 内嵌图片对象 |
+| 中间产物 | `audio.wav` / `transcript.txt` | `article-text.txt` / `images/` |
+
+视频管线要解决「把声音和画面变成文字」，文章管线要解决「把排版化的内容拆成文字和插图」。
+
+#### 3.17 PDF 解析
+
+用 **pymupdf**（PyMuPDF）逐页抽取文本与图片：
+
+```python
+import pymupdf
+doc = pymupdf.open("article.pdf")
+for page in doc:
+    text = page.get_text()
+    for img in page.get_images(full=True):
+        pix = pymupdf.Pixmap(doc, img[0])
+        pix.save(...)
+```
+
+**两个坑**：
+
+1. `pip install pymupdf` 从 `files.pythonhosted.org` 下载超时 → 换清华镜像 `-i https://pypi.tuna.tsinghua.edu.cn/simple` 后成功
+2. 提取出的图片扩展名与真实格式不符：`read_image` 报告 `image/jpeg`，但读文件头是 `89 50 4E 47`（真 PNG）→ **以文件头为准**，保留 `.png`
+
+#### 3.18 图片筛选与重命名
+
+原始提取 9 张图，其中 p13 / p14 / p15 是同一张三层的重复页 → 去重后保留 **8 张**，并按语义重命名：
+
+```
+p04-1.png → skill-md-metadata.png      （SKILL.md 的元数据部分）
+p04-2.png → skill-md-instruction.png   （SKILL.md 的指令部分）
+p06-1.png → skill-list.png
+...
+```
+
+重命名的价值：HTML 里 `<img src="assets/skill-md-metadata.png">` 比 `p04-1.png` 可读得多，日后替换或排查能直接对应内容。
+
+#### 3.19 结果
+
+21 页 PDF → 11385 字符正文 → 8 张配图 → 11 个章节 + 术语表，原文全部章节保留。
+
 ---
 
-## 四、关键技术决策
+### 阶段六：第四个视频笔记（Token 与 Embedding）
 
-### 4.1 为什么选择 GitHub Pages 而不是 Cloudflare Pages？
+#### 3.20 下载与转录
+
+**目标视频**：B站 BV1oNv8BPE2m《15分钟弄懂Token和Embedding》
+
+- 时长 15:17，1080p，33.34 MB
+- 转录 **344 段**（faster-whisper base / CPU / int8，耗时约 157 秒）
+- 视频自带 6 个官方章节划分 → 时间线直接照搬，不用自己猜
+
+**踩坑**：PowerShell 里 `yt-dlp --print` 输出的中文是 GBK 乱码，且重定向到文件会写成 UTF-16LE。
+
+解法：不用 `--print`，改用 `-J` 输出 JSON（中文是 `\uXXXX` 转义），再用 Python 读：
+
+```python
+json.load(io.open('info.json', encoding='utf-8-sig'))
+```
+
+#### 3.21 抽帧策略：宁多勿少，再筛
+
+这一篇的抽帧方法和前几篇不同：
+
+```
+按知识点密集处先抽 39 张候选
+  → 逐张 read_image 肉眼确认
+  → 剔除空白帧 / 过渡帧 / 重复
+  → 最终入库 24 张
+```
+
+**为什么不一次抽准**：视频的动画节奏不可预测，只凭时间点猜很容易抽到过渡帧。先多抽再筛，比反复微调时间点更省事。
+
+未使用的 15 张在后续清理阶段删除（释放 1.5 MB）。
+
+#### 3.22 结果
+
+6 章 / 24 张配图 / 46 KB HTML，含 30 秒总览、视频时间线、分章正文、一页速查、术语表。
+
+---
+
+## 四、格式规范体系（STYLE.md）
+
+### 4.1 问题的由来
+
+做到第三个主题时暴露了一个问题：**「格式统一」其实是假的**。
+
+四篇笔记的实测配色与类名：
+
+| 主题 | 模板 | 底色 / 主色 | 关键类名 |
+|------|------|-------------|----------|
+| `rag/` | Template A | `#f5f0e8` / `#2b6cb0` | `.container` `.header` `.section` |
+| `ai-coding-workflow/` | B v1 | `#fafaf7` / `#2563eb` | `.wrap` `.hero` `.card` |
+| `agent-skill/` | B v2 | 同 B | + `.compare` `.layers` |
+| `token-embedding/` | B v3 | 同 B | + `.timeline` `.overview-grid` |
+
+**根因**：格式从来没有被写成规范。真实机制是「读上一篇 → 抄它的 CSS → 换内容」——靠**制品复制**传递，而不是靠文档约定。
+
+顺便排除一个误判：`z-video-study-webpage-qwen` 这个 skill **并没有**提供模板。它的目录里没有任何 HTML 文件，SKILL.md 里那句「沿用当前 `study-summary.html` 的视觉模板」是一条**断掉的引用**；它脚本自带生成器的 CSS 是宋体米色纸张风（`--paper:#f7f2ea` / `--ochre:#c4862f`），与实际发布的四篇一篇都对不上。
+
+### 4.2 解决方案
+
+新增 `STYLE.md`，把格式写成可执行的契约：
+
+| 章节 | 内容 |
+|------|------|
+| §1 | 三条硬性约束（单文件自包含 / 只许追加类名 / 配图可追溯） |
+| §3 | 主题色板 |
+| §4 | 组件清单（14 个组件，标注各自首次出现的版本） |
+| §5 | 页面骨架（可直接复制的 HTML 结构） |
+| §6 | 规范 CSS（363 行） |
+| §7 | 模板统一状态 + A→B 历史映射 |
+| §8 | 内容要求清单 |
+| §9 | 发布前检查命令 |
+
+### 4.3 关键设计：规范不能手抄
+
+文档与代码最大的风险是各说各话。所以 §6 的 CSS **不是手写的**，而由脚本从参考实装自动抽取：
+
+```
+token-embedding/index.html   ← 唯一可信源
+        │  build_style_spec.py   （正则抽取 <style> 块）
+        ▼
+STYLE.md §6                  ← 规范附录（自动生成）
+        │  verify_style_spec.py  （逐字节比对）
+        ▼
+   identical : True
+```
+
+两个脚本都用 `Path(__file__).resolve().parent` 定位仓库 —— 这带来一个意外好处：**后来整个文件夹改名 + 跨磁盘移动时，脚本完全不受影响**。
+
+`build_style_spec.py` 内置幂等保护：`STYLE.md` 里的 `<!-- CANONICAL-CSS -->` 标记已被替换时会拒绝重复运行。
+
+### 4.4 模板统一（2026-09-22）
+
+把 `rag/` 从 Template A 迁移到 B v3：
+
+1. 把 `token-embedding/index.html` 的 `<style>` 块**原样注入**（不手抄，保证与规范逐字节一致）
+2. 正文按组件映射改写：
+
+   | 旧 | 新 |
+   |---|---|
+   | `.header` | `.hero` |
+   | `.container` + `.section` | `.wrap` + `section` + `.sec-head` |
+   | `.knowledge-card` | `.card` + `.img-block` |
+   | `.key-point` | `.highlight.{blue,green,orange,red,purple}` |
+   | `.flow-step` | `.flow-item`（`.num` + `.sub-label`） |
+   | `.comparison-table` | `table` |
+   | `.time` / `.content` | `.t-time` / `.t-title` / `.t-desc` |
+   | `.action-list` | 普通 `ul` / `ol` |
+
+3. 校验：图片集合与迁移前一致（10 张）、标签全配平、CSS 逐字节相同、无 Template A 类名残留、时间线 14 项与原版一致
+4. 顺带补齐了 §8 要求但原本缺失的「一页速查」
+
+至此四个主题格式完全统一。
+
+---
+
+## 五、本地工作区治理
+
+### 5.1 清理
+
+第一次全量盘点：**673 个文件 / 421.62 MB**。分四类清理：
+
+| 类别 | 体积 | 处理方式 |
+|------|------|----------|
+| ① 完全重复的副本 | ~51 MB | 删前逐个 **MD5 比对**，确认母本仍在才删 |
+| ② 临时脚本与缓存 | ~5.1 MB | 含 `.wrangler/` 缓存（内有 Cloudflare account ID） |
+| ③ 音频 `audio.wav` | ~104.8 MB | 转录文本已存，可一条 ffmpeg 命令重建 |
+| ④ 视频 `.mp4` | ~225 MB | B站公开视频，URL 已记在笔记页脚 |
+
+**关键做法：删前先保全证据。** 删掉下载目录前，先把 B站 `.info.json`（来源元数据）和 `download-report.md` 挪进工作目录；RAG 视频的 `.info.json` 保留（视频删除后它是本地仅存的来源记录）。
+
+**两处刻意偏离清单**：
+
+1. `study-qwen/deploy/assets/` 保留了 —— 它在重复清单里，但删了会让 `deploy/index.html` 的 20 张图全部断链
+2. RAG 视频的 `.info.json` 保留，与 `ai-coding-workflow/video.info.json` 保持一致
+
+**结果**：673 → 403 个文件，421.62 → 36.14 MB，**释放 385.48 MB（91.4%）**。
+
+### 5.2 跨磁盘迁移
+
+工作区从 `C:\Users\96122\Downloads\小红书` 改名为「个人知识积累」并移到 `E:\`。
+
+**影响与应对**：
+
+- 会话记录的默认工作目录失效 → 命令报 `spawn powershell.exe ENOENT`
+  （不是 powershell 不见了，是工作目录不存在导致进程起不来）
+- 应对：所有操作改用**显式 `workdir` + 绝对路径**
+- **没有建目录联接（junction）**：那会在 Downloads 下复活一个名为「小红书」的文件夹，与改名的意图相悖
+
+**迁移后全量验证**（8 项全部通过）：
+
+| 检查项 | 结果 |
+|--------|------|
+| 四个主题配图 | 52 张引用，0 缺失 |
+| git 仓库 | 工作区干净、remote 正确、HEAD 完整 |
+| 规范工具链 | `identical : True`（靠 `__file__` 定位，不受移动影响） |
+| skill 安装位置 | `~/.dsh/skills` 18 个完好（在用户目录，未随工作区移动） |
+| 旧路径硬编码 | 无 |
+
+**结论**：只要没有硬编码绝对路径，整个工作区可以任意改名、移动磁盘而不损坏。这也是当初把工具脚本改为 `Path(__file__).resolve().parent` 的回报。
+
+---
+
+## 六、关键技术决策
+
+### 6.1 为什么选择 GitHub Pages 而不是 Cloudflare Pages？
 
 | 对比项 | Cloudflare Pages | GitHub Pages |
 |--------|------------------|--------------|
@@ -452,7 +673,7 @@ git push
 
 **结论**：GitHub Pages 更适合个人知识库场景。
 
-### 4.2 为什么用 faster-whisper 而不是 OpenAI Whisper？
+### 6.2 为什么用 faster-whisper 而不是 OpenAI Whisper？
 
 | 对比项 | OpenAI Whisper | faster-whisper |
 |--------|----------------|----------------|
@@ -463,7 +684,7 @@ git push
 
 **结论**：faster-whisper 更适合本地使用。
 
-### 4.3 为什么每个主题一个目录？
+### 6.3 为什么每个主题一个目录？
 
 **优点**：
 - 自包含：每个主题独立，互不干扰
@@ -481,9 +702,9 @@ git push
 
 ---
 
-## 五、遇到的问题与解决方案
+## 七、遇到的问题与解决方案
 
-### 5.1 视频下载问题
+### 7.1 视频下载问题
 
 **问题**：yt-dlp 报错 "ffmpeg not found"
 
@@ -496,7 +717,7 @@ git push
 cp ffmpeg.exe E:\python\Scripts\
 ```
 
-### 5.2 转录质量问题
+### 7.2 转录质量问题
 
 **问题**：whisper 转录有错别字（专业术语识别错误）
 
@@ -505,7 +726,7 @@ cp ffmpeg.exe E:\python\Scripts\
 - 使用正则表达式批量替换
 - 建立术语表供后续使用
 
-### 5.3 GitHub 认证问题
+### 7.3 GitHub 认证问题
 
 **问题**：git push 报错 "Authentication failed"
 
@@ -517,7 +738,7 @@ gh auth setup-git
 # 之后 git push 会自动使用 gh 的 token
 ```
 
-### 5.4 GitHub Pages 构建问题
+### 7.4 GitHub Pages 构建问题
 
 **问题**：推送后页面没有更新
 
@@ -528,21 +749,21 @@ gh auth setup-git
 
 ---
 
-## 六、经验总结
+## 八、经验总结
 
-### 6.1 工具选择原则
+### 8.1 工具选择原则
 
 1. **优先选择轻量级工具**：faster-whisper > OpenAI Whisper
 2. **优先选择集成度高的方案**：GitHub Pages > Cloudflare Pages
 3. **优先选择标准化方案**：git + GitHub > 私有方案
 
-### 6.2 内容组织原则
+### 8.2 内容组织原则
 
 1. **一个主题一个目录**：便于管理和分享
 2. **每个主题自包含**：HTML + 图片 + README
 3. **统一的结构**：便于后续自动化处理
 
-### 6.3 部署流程优化
+### 8.3 部署流程优化
 
 **当前流程**：
 ```
@@ -554,11 +775,12 @@ gh auth setup-git
 - 自动：推送即部署
 - 可追溯：所有变更都有记录
 
-### 6.4 后续改进方向
+### 8.4 后续改进方向
 
-1. **自动化生成**：
-   - 输入视频链接 → 自动生成笔记
-   - 使用 AI 辅助内容整理
+1. **自动化生成**：🟡 部分实现
+   - ✅ 输入链接 → 下载 → 转录 → 抽帧 → 生成笔记，流程已跑通 4 次
+   - ✅ 格式已固化为 `STYLE.md`，不再靠「抄上一篇」
+   - ⬜ 仍未脚本化：抽帧时间点、图片筛选、正文撰写目前靠人工判断
 
 2. **搜索功能**：
    - 添加全文搜索
@@ -574,9 +796,9 @@ gh auth setup-git
 
 ---
 
-## 七、附录
+## 九、附录
 
-### 7.1 完整命令清单
+### 9.1 完整命令清单
 
 ```bash
 # 视频下载
@@ -607,9 +829,33 @@ git init -b main
 git add -A
 git commit -m "docs: 新增主题"
 git push
+
+# PDF 解析（文章管线）
+pip install pymupdf -i https://pypi.tuna.tsinghua.edu.cn/simple
+python -c "
+import pymupdf
+doc = pymupdf.open('article.pdf')
+for page in doc:
+    print(page.get_text())
+    for img in page.get_images(full=True):
+        pix = pymupdf.Pixmap(doc, img[0])
+        pix.save(f'images/p{page.number+1}.png')
+"
+
+# 获取视频元数据（避免 PowerShell 中文乱码：用 -J 输出 JSON）
+yt-dlp -J "VIDEO_URL" > info.json
+python -c "
+import json,io
+d = json.load(io.open('info.json', encoding='utf-8-sig'))
+print(d['title'], d['duration'], d.get('chapters'))
+"
+
+# 格式规范维护
+python build_style_spec.py    # 从参考实装重新生成 STYLE.md 的 CSS 附录
+python verify_style_spec.py   # 期望输出 identical : True
 ```
 
-### 7.2 文件模板
+### 9.2 文件模板
 
 **主题 README.md 模板**：
 ```markdown
@@ -652,7 +898,7 @@ git push
 </a>
 ```
 
-### 7.3 参考资源
+### 9.3 参考资源
 
 - [yt-dlp 文档](https://github.com/yt-dlp/yt-dlp)
 - [faster-whisper 文档](https://github.com/guillaumekln/faster-whisper)
@@ -661,21 +907,28 @@ git push
 
 ---
 
-## 八、结语
+## 十、结语
 
 这个 knowledge-hub 项目从 0 到 1 经历了：
 1. 视频下载与转录
 2. 图文笔记生成
 3. 部署方案探索（Cloudflare → GitHub）
 4. 知识库结构设计
-5. 第二个主题添加
+5. 第二、三、四个主题添加（含一条完全不同的 PDF 文章管线）
+6. 格式规范固化（`STYLE.md` + 自动抽取校验工具）
+7. 四个主题模板统一
+8. 本地工作区清理与跨磁盘迁移
 
 整个过程使用了多种工具和技能，遇到了各种问题，但也积累了宝贵的经验。
+
+**最大的教训**：「格式统一」如果只靠约定俗成、靠复制上一份制品，它一定会漂。只有把规范写成文件、并且让规范与实装之间有**自动校验**，才算真的固定下来。
 
 希望这份文档能帮助到想要搭建类似知识库的朋友。
 
 ---
 
-**文档版本**：v1.0  
-**最后更新**：2026-09-21  
+**文档版本**：v2.0  
+**最后更新**：2026-09-22  
 **作者**：AI 助手（基于用户操作记录整理）
+
+**v2.0 变更**：补齐第 3、4 个主题；新增「格式规范体系」与「本地工作区治理」两章；更新命令清单与结语。
