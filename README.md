@@ -24,8 +24,11 @@
 ```
 knowledge-hub/
 ├── README.md            # 本文件：总索引
+├── STYLE.md             # 📐 笔记格式规范（新增主题前必读）
 ├── index.html           # 门户首页（GitHub Pages 入口）
 ├── .nojekyll            # 关闭 Jekyll 处理
+├── build_style_spec.py  # 从参考实装抽取 CSS → 注入 STYLE.md
+├── verify_style_spec.py # 校验 STYLE.md 的 CSS 与实装逐字节一致
 ├── rag/                 # 主题：RAG 工作机制详解
 │   ├── README.md        # 主题说明
 │   ├── index.html       # 图文笔记正文
@@ -50,11 +53,14 @@ knowledge-hub/
 
 ## 新增主题的方式
 
+**先读 [`STYLE.md`](STYLE.md)** —— 它定义了所有笔记的格式契约（色板、组件、页面骨架、发布前检查）。参考实装是 `token-embedding/index.html`。
+
 1. 新建 `<主题名>/` 目录
-2. 放入 `index.html` 与 `assets/`
-3. 写一份 `README.md` 说明主题内容
+2. 照 `STYLE.md` 的骨架写 `index.html`，配图放 `assets/`
+3. 写一份 `README.md` 说明主题内容（简介 / 结论速览 / 文件说明 / 来源）
 4. 在上方「主题目录」表格里加一行
-5. 同步更新 `index.html` 门户首页的卡片
+5. 同步更新 `index.html` 门户首页的卡片与页脚链接
+6. 按 `STYLE.md` §9 跑一遍发布前检查
 
 ---
 
@@ -63,6 +69,21 @@ knowledge-hub/
 - 本仓库为公开知识库，内容基于公开资料整理与二次加工
 - 笔记中保留原始来源链接，便于追溯
 - 图文配图来源见各主题 `README.md`
+- **笔记格式由 [`STYLE.md`](STYLE.md) 统一约定**；`rag/` 是格式统一前的早期版本，见 `STYLE.md` §7
+
+## 维护格式规范
+
+`STYLE.md` §6 的规范 CSS 不允许手改，由脚本从参考实装自动抽取，保证规范与实装不会互相漂移：
+
+```bash
+# 改完 token-embedding/index.html 的 CSS 后，重新生成规范
+python build_style_spec.py
+
+# 校验规范与实装是否逐字节一致
+python verify_style_spec.py     # 期望输出 identical : True
+```
+
+脚本内置幂等保护：`STYLE.md` 里标记已被替换时会拒绝重复运行（需手动改回 `<!-- CANONICAL-CSS -->` 标记）。
 
 ## License
 
