@@ -239,14 +239,14 @@
       每个主题一个目录，直接在线阅读。
     </p>
     <div class="hero-links">
-      <a class="btn btn-primary" href="rag/">开始阅读 RAG 笔记 →</a>
+      <a class="btn btn-primary" href="#topics">浏览主题目录 →</a>
       <a class="btn btn-ghost" href="https://github.com/ytwangdongsheng/knowledge-hub" target="_blank" rel="noopener">GitHub 仓库</a>
     </div>
   </div>
 </div>
 
 <!-- ============ TOPICS ============ -->
-<section class="wrap">
+<section class="wrap" id="topics">
   <div class="sec-head">
     <h2>主题目录</h2>
     <p>点击卡片进入对应主题的图文笔记。</p>
@@ -301,11 +301,26 @@
       <div class="go">阅读笔记 →</div>
     </a>
 
+    <a class="topic" href="token-embedding/" style="--tone:#f59e0b">
+      <div class="ico">🍎</div>
+      <h3>15 分钟弄懂 Token 和 Embedding</h3>
+      <p class="desc">
+        详解 LLM 与 RAG 的数据处理机制 —— 从 token 编号、词表大小，到 embedding 的维度、
+        One-Hot 与 Linear 实现，以及 RAG embedding 的对比学习。
+      </p>
+      <div class="tags">
+        <span>Token</span>
+        <span>Embedding</span>
+        <span>Tokenizer</span>
+        <span>对比学习</span>
+      </div>
+      <div class="go">阅读笔记 →</div>
+    </a>
+
     <div class="topic placeholder">
       <div class="plus">＋</div>
       <div>更多主题补充中</div>
-    </div>
-  </div>
+    </div>  </div>
 </section>
 
 <!-- ============ STRUCTURE ============ -->
@@ -332,6 +347,10 @@
 │   ├── README.md        <i># 主题说明</i>
 │   ├── index.html       <i># 图文笔记正文</i>
 │   └── assets/          <i># 配图</i>
+├── <b>token-embedding/</b>   <i># 主题：Token 与 Embedding</i>
+│   ├── README.md        <i># 主题说明</i>
+│   ├── index.html       <i># 图文笔记正文</i>
+│   └── assets/          <i># 配图</i>
 └── &lt;主题名&gt;/            <i># 后续主题按同样结构新增</i>
     ├── README.md
     ├── index.html
@@ -345,6 +364,7 @@
     <a href="rag/">RAG 工作机制详解</a>
     <a href="ai-coding-workflow/">AI 编程全流程</a>
     <a href="agent-skill/">一文讲透 Agent Skill</a>
+    <a href="token-embedding/">Token 与 Embedding</a>
     <a href="https://github.com/ytwangdongsheng/knowledge-hub" target="_blank" rel="noopener">GitHub</a>
   </div>
   <div>Knowledge Hub · 个人知识库</div>

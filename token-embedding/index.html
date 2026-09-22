@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>15 分钟弄懂 Token 和 Embedding — 图文学习笔记</title>
+<meta name="description" content="Token 与 Embedding 完整解析：大模型为什么先转 token、词表大小 Vocab Size、为什么一个编号表达不了语义、Embedding 的维度与实现、RAG Embedding 与 LLM Embedding 的本质差异与对比学习">
+<style>
+  :root {
+    --bg: #fafaf7;
+    --card: #ffffff;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --orange: #d97706;
+    --orange-light: #fef3c7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --purple: #7c3aed;
+    --purple-light: #ede9fe;
+    --text: #1f2937;
+    --text-dim: #6b7280;
+    --text-dimmer: #9ca3af;
+    --border: #e5e7eb;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+    color: white;
+    padding: 60px 24px 50px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: clamp(26px, 4.6vw, 40px);
+    font-weight: 800;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+  .hero p {
+    font-size: clamp(15px, 2.5vw, 18px);
+    opacity: 0.9;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .hero .meta {
+    margin-top: 20px;
+    font-size: 14px;
+    opacity: 0.75;
+  }
+
+  /* Layout */
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
+  section { padding: 48px 0; }
+  section + section { border-top: 1px solid var(--border); }
+
+  /* Section headers */
+  .sec-head { margin-bottom: 28px; }
+  .sec-head h2 {
+    font-size: clamp(22px, 4vw, 28px);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .sec-head h2 .emoji { font-size: 1.2em; }
+  .sec-head p { color: var(--text-dim); font-size: 15px; }
+
+  /* Sub heading */
+  h3.sub {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 26px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card p, .card li { font-size: 15px; color: var(--text); }
+  .card p + p { margin-top: 10px; }
+  .card ul, .card ol { padding-left: 22px; margin-top: 10px; }
+  .card li + li { margin-top: 6px; }
+
+  /* Highlight boxes */
+  .highlight {
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin: 16px 0;
+  }
+  .highlight.blue { background: var(--accent-light); border-left: 4px solid var(--accent); }
+  .highlight.green { background: var(--green-light); border-left: 4px solid var(--green); }
+  .highlight.orange { background: var(--orange-light); border-left: 4px solid var(--orange); }
+  .highlight.red { background: var(--red-light); border-left: 4px solid var(--red); }
+  .highlight.purple { background: var(--purple-light); border-left: 4px solid var(--purple); }
+  .highlight > strong:first-child { display: block; margin-bottom: 6px; }
+  .highlight ul { margin-top: 6px; }
+
+  /* Code blocks */
+  pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px;
+    line-height: 1.7;
+    margin: 16px 0;
+  }
+  pre code { color: inherit; background: none; padding: 0; }
+  code {
+    background: #f1f5f9;
+    color: #db2777;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+  }
+
+  /* Images */
+  .img-block {
+    margin: 20px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    background: #fff;
+  }
+  .img-block img {
+    width: 100%;
+    display: block;
+  }
+  .img-block .cap {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-dim);
+    background: #f9fafb;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    margin: 24px 0;
+  }
+  .flow-item {
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 14px 20px;
+    text-align: center;
+    min-width: 110px;
+    box-shadow: var(--shadow);
+  }
+  .flow-item .num {
+    display: inline-block;
+    width: 28px; height: 28px;
+    line-height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .flow-item .label {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .flow-item .sub-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--text-dimmer);
+    font-size: 20px;
+  }
+
+  /* Overview grid */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 18px 0;
+  }
+  .overview-item {
+    background: var(--accent-light);
+    border-radius: 12px;
+    padding: 16px 18px;
+    border-left: 4px solid var(--accent);
+  }
+  .overview-item .label {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.4px;
+  }
+  .overview-item .value {
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  /* Layers */
+  .layers { margin: 22px 0; }
+  .layer {
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    border-left: 5px solid;
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+  .layer.l1 { border-left-color: #f59e0b; }
+  .layer.l2 { border-left-color: var(--accent); }
+  .layer.l3 { border-left-color: var(--green); }
+  .layer .layer-title {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .layer .pill {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: var(--text-dim);
+  }
+  .layer p { font-size: 14.5px; color: var(--text-dim); }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+  tr:hover td { background: #fafafa; }
+
+  /* Two column compare */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .compare .col {
+    border-radius: 12px;
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    background: var(--card);
+  }
+  .compare .col h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .compare .col.left { border-top: 3px solid var(--purple); }
+  .compare .col.right { border-top: 3px solid var(--green); }
+  .compare .col ul { padding-left: 20px; }
+  .compare .col li { font-size: 14px; margin-bottom: 5px; }
+
+  /* Timeline */
+  .timeline { position: relative; margin: 22px 0; padding-left: 26px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 5px; top: 6px; bottom: 6px;
+    width: 2px;
+    background: var(--border);
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -26px; top: 9px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+  }
+  .timeline-item .t-time {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .timeline-item .t-title { font-size: 15px; font-weight: 600; }
+  .timeline-item .t-desc { font-size: 14px; color: var(--text-dim); }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--text-dimmer);
+    font-size: 13px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer p + p { margin-top: 6px; }
+
+  @media (max-width: 640px) {
+    .hero { padding: 40px 16px 36px; }
+    section { padding: 32px 0; }
+    .card { padding: 18px; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .compare { grid-template-columns: 1fr; }
+    .overview-grid { grid-template-columns: 1fr; }
+    pre { font-size: 12.5px; padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <h1>🍎 15 分钟弄懂 Token 和 Embedding</h1>
+  <p>详解 LLM 与 RAG 的数据处理机制 —— 从 token 编号、词表大小，到 embedding 的维度、实现与对比学习</p>
+  <div class="meta">来源：B站 BV1oNv8BPE2m · 时长 15:17 · UP主：隔壁的程序员老王</div>
+</div>
+
+<!-- 30 秒总览 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">⚡</span> 30 秒总览</h2>
+    <p>整期视频只回答三个问题</p>
+  </div>
+
+  <div class="card">
+    <div class="highlight blue">
+      <strong>🎯 视频开篇的三个问题</strong>
+      <ul>
+        <li>为什么大模型处理的是 <strong>token</strong> 而不是文字？</li>
+        <li>为什么大模型都有一步叫做 <strong>embedding</strong>？</li>
+        <li>RAG 中也有一个 embedding，它和 LLM 的 embedding <strong>是一回事吗</strong>？</li>
+      </ul>
+    </div>
+
+    <div class="overview-grid">
+      <div class="overview-item">
+        <div class="label">TOKENIZER</div>
+        <div class="value">把文字 → 编号（token）</div>
+      </div>
+      <div class="overview-item">
+        <div class="label">EMBEDDING</div>
+        <div class="value">把编号 → 多维向量</div>
+      </div>
+      <div class="overview-item">
+        <div class="label">本质差异</div>
+        <div class="value">Tokenizer 可人工设计<br>Embedding 必须训练出来</div>
+      </div>
+      <div class="overview-item">
+        <div class="label">最终结论</div>
+        <div class="value">同一个架构 + 不同训练方式<br>= 完全不同的功能</div>
+      </div>
+    </div>
+
+    <p><strong>核心一句话：</strong>Tokenizer 负责把文字变成数字，Embedding 负责把数字变成"能表达语义关系的向量"。前者是预处理，后者是模型的一部分。</p>
+
+    <div class="img-block">
+      <img src="assets/frame-00-intro.jpg" alt="本期主题：Token 和 Embedding">
+      <div class="cap">📷 今天我们就聊聊 token 和 embedding</div>
+    </div>
+  </div>
+</section>
+
+<!-- 时间线 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🗺️</span> 视频时间线</h2>
+    <p>六个章节，一条从"编号"到"语义"的推演链</p>
+  </div>
+
+  <div class="card">
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="t-time">00:00 – 03:39</div>
+        <div class="t-title">Token</div>
+        <div class="t-desc">为什么要先转成编号、词表与分词、词表大小对中文的影响</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">03:39 – 05:42</div>
+        <div class="t-title">Token 的问题</div>
+        <div class="t-desc">大模型是连续函数，但一个编号表达不了"既近又远"</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">05:42 – 08:55</div>
+        <div class="t-title">Embedding</div>
+        <div class="t-desc">用多个数描述一个词、维度与 d_model、为什么必须训练</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">08:55 – 10:51</div>
+        <div class="t-title">Embedding 实现</div>
+        <div class="t-desc">One-Hot 编码 + 一层 Linear，以及模型末尾的逆操作</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">10:51 – 14:14</div>
+        <div class="t-title">RAG Embedding</div>
+        <div class="t-desc">与 LLM Embedding 的区别、联系，以及对比学习</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">14:14 – 15:17</div>
+        <div class="t-title">哲学</div>
+        <div class="t-desc">同一套架构，不同的经历，训练出独一无二的个体</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 一、Token -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🔢</span> 一、Token：大模型为什么不直接读文字</h2>
+    <p>Token 就是一个一个代表字词的编号</p>
+  </div>
+
+  <div class="card">
+    <h3>1）提高效率：计算机里文字是离散的字符</h3>
+    <p>和大模型聊天的时候，我们都是直接输入文字的。但实际上现在基本所有的 LLM，都要先通过一个叫做 <strong>Tokenizer</strong> 的东西，把文字转化成 <strong>token</strong>。</p>
+    <p>所谓 token，其实就是一个一个代表字词的<strong>编号</strong>。那为什么要进行这一步呢？直接处理文字不好吗？</p>
+
+    <div class="highlight orange">
+      <strong>⚠️ 原因很简单：为了提高效率</strong>
+      在电脑之中，文字都是一个字符一个字符存储的。比如说 <code>Apple</code>，计算机存储的并不是 "Apple" 这个词，而是 <strong>A、p、p、l、e 五个离散的字母</strong>。如果用离散的字母来训练模型，那就先要求模型从这五个字母中识别出"它是苹果"，然后再用"苹果"这个概念进行下一步处理。
+      <br><br>
+      不是说不行，但在<strong>算力有限</strong>的情况下，这样做效率太低了。
+    </div>
+
+    <div class="img-block">
+      <img src="assets/frame-01-token-def.jpg" alt="用户 → tokenizer → 大语言模型">
+      <div class="cap">📷 完整链路：用户输入"老王爱吃苹果" → tokenizer → 数字 7 15 3 871 → 大语言模型</div>
+    </div>
+
+    <p>所以人们就给大模型做了一个<strong>词表（词典）</strong>，用数字来代表单词。比如数字 1 代表 Apple，数字 2 代表 Banana，数字 3 代表 Pear。而 1、2、3 这些数字，就是所谓的 <strong>token</strong>。</p>
+
+    <div class="img-block">
+      <img src="assets/frame-03-vocab-table.jpg" alt="词典映射 1=Apple 2=Banana 3=Pear">
+      <div class="cap">📷 数字 1 就代表 Apple，数字 2 就代表 Banana</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>2）Token 与单词不是严格一一对应</h3>
+    <p>当然，token 和单词也不是一一严格对应的。有时候一个单词可能会被拆分成<strong>多个 token</strong>。</p>
+    <p>比如说 <code>oldest</code> 这个单词，就可能被拆分成一个代表 <code>old</code> 的 token，和一个代表最高级 <code>est</code> 的 token。这样做的好处是，可以<strong>帮助大模型认识一些没有见过的词</strong>。</p>
+
+    <div class="highlight green">
+      <strong>✅ 举例：Goodest</strong>
+      <code>Goodest</code> 这个词本身是不存在的，但是却可以被拆解成 <code>good</code> 和 <code>est</code>，大模型也就理解了。
+    </div>
+
+    <div class="img-block">
+      <img src="assets/frame-04-subword.jpg" alt="oldest = 4 (old) 5 (est)">
+      <div class="cap">📷 oldest = 4 (old) + 5 (est)：一个词拆成两个 token</div>
+    </div>
+
+    <p>这样一来，大模型处理的就不是单独的字母了，而是 1、2、3 这些代表某些单词或者单词片段的数字，于是效率就高多了。</p>
+    <p>而这些<strong>把文字转化成数字、又把数字转化回文字的程序，就叫做 Tokenizer</strong>。</p>
+  </div>
+
+  <div class="card">
+    <h3>3）常见的 Tokenizer 与算法</h3>
+    <p>现在比较常见的 Tokenizer 库，有 OpenAI 的 <strong>tiktoken</strong> 和谷歌的 <strong>WordPiece</strong> 等等。这些 Tokenizer 的内部实现原理不尽相同：</p>
+    <table>
+      <tr><th>Tokenizer</th><th>使用算法</th><th>共同功能</th></tr>
+      <tr><td><strong>tiktoken</strong>（OpenAI）</td><td>BPE</td><td rowspan="2">把字词转化成数字</td></tr>
+      <tr><td><strong>WordPiece</strong>（Google）</td><td>WordPiece</td></tr>
+    </table>
+
+    <div class="img-block">
+      <img src="assets/frame-06-tokenizer-libs.jpg" alt="tiktoken 官方文档">
+      <div class="cap">📷 有 OpenAI 的 tiktoken 和谷歌的 WordPiece 等等</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>4）词表大小 Vocab Size：为什么 GPT-2 中文不好</h3>
+    <p>一个 Tokenizer 认识的所有 token 数量，叫做<strong>词表大小 Vocab Size</strong>。</p>
+
+    <div class="highlight red">
+      <strong>❗ tiktoken 库中最小的词表：GPT-2 的 r50k_base</strong>
+      只认识 <strong>50257</strong> 个 token。因为词表太小，所以多数中文都是<strong>一个字对应一个 token</strong>，甚至有些不常见的字要好几个 token 才能表示，很少会像英文那样直接把一个单词映射成一个 token。
+      <br><br>
+      这样一来，中文的处理效率自然就变得很低了 —— 这也是 <strong>GPT-2 对中文支持不好的原因之一</strong>。
+    </div>
+
+    <div class="img-block">
+      <img src="assets/frame-07-vocab-size.jpg" alt="词表大小 Vocab Size 与 token 编号">
+      <div class="cap">📷 tiktoken 库中最小的词表：1=Apple / 2=Banana / 3=Pear / 4=old / 5=est / 6=good</div>
+    </div>
+
+    <p>而对中文支持更好的 <strong>GPT-4o</strong>，不仅模型本身变大了，它的 tiktoken 词表也增大到了 <strong>20 万</strong>（<code>o200k_base</code>），基本覆盖了所有的中文单词，从根本上增加了中文的处理效率。</p>
+
+    <div class="img-block">
+      <img src="assets/frame-09-gpt4o-vocab.jpg" alt="o200k_base 词表">
+      <div class="cap">📷 GPT-4o 使用 o200k_base，词表增大到 20 万</div>
+    </div>
+
+    <div class="highlight purple">
+      <strong>📌 特别提醒：Token 化属于数据预处理</strong>
+      转化 token 的过程属于<strong>数据的预处理</strong>，这个过程本身<strong>并不是大模型的一部分</strong>。训练大模型的时候，Tokenizer 本身是<strong>固定不变</strong>的。
+    </div>
+  </div>
+</section>
+
+<!-- 二、Token 的问题 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🤔</span> 二、Token 的问题：一个数字表达不了"既近又远"</h2>
+    <p>大模型是一个连续函数，但这个特性还没被用起来</p>
+  </div>
+
+  <div class="card">
+    <h3>1）大模型是一个超级复杂的连续函数</h3>
+    <p>现在我们有了 Tokenizer，就可以把任何文字转化成数字，并放入大模型进行计算了。而大模型本身，则可以近似地被看成一个<strong>超级复杂的连续函数</strong>：token 就是函数的输入，而函数的输出也就是大模型的回复。</p>
+
+    <div class="img-block">
+      <img src="assets/frame-11-continuous.jpg" alt="tokenizer → 连续函数 → 输出">
+      <div class="cap">📷 输入 2 和 1，经过连续函数，输出 456</div>
+    </div>
+
+    <div class="highlight blue">
+      <strong>💡 关键点：连续这个特性天然决定了</strong>
+      如果输入的数值离得很近，那输出的数值通常也会离得很近。
+      <br><br>
+      还是因为算力有限，所以我们希望在有限的计算资源下，利用这个特点来<strong>增加训练的效率</strong>。
+    </div>
+
+    <p>比如说：</p>
+    <ul>
+      <li>老王爱吃苹果</li>
+      <li>老王爱吃 Apple</li>
+      <li>老王爱吃りんご（日语"苹果"）</li>
+    </ul>
+    <p>它们都是同一个意思，所以我们希望模型输出的内容应该也是差不多的。</p>
+    <p>"老王爱吃"都是相同的文字，所以 token 肯定也是相同的。那么如果说 苹果 / Apple / りんご 对应的 token 本身也很相近的话，根据函数的连续性，<strong>模型天生就会输出比较相似的内容</strong>。如果我们能够利用这个特点，在训练的时候就可以省下不少的算力。</p>
+  </div>
+
+  <div class="card">
+    <h3>2）但 token 本身只是一个数字</h3>
+    <p>但是 token 本身只是一个数字，也就是一个<strong>维度</strong>。我们在设计 Tokenizer 的时候，当然可以让 苹果 / Apple / りんご 对应的 token 离得比较近。</p>
+    <p><strong>那香蕉呢？</strong></p>
+
+    <div class="highlight orange">
+      <strong>⚠️ 一个数字无法调和的矛盾</strong>
+      <ul>
+        <li>香蕉和苹果<strong>并不是一个东西</strong>，但又都是水果、又都是中文 —— 似乎应该<b>离中文的苹果比较近</b>；</li>
+        <li>香蕉和 Apple <strong>既不是同一个东西，又不是同一种语言</strong> —— 似乎应该<b>离得又比较远</b>；</li>
+        <li>但是<span style="color:var(--red);font-weight:700">香蕉离 Apple 远了，离苹果也就远了</span>。</li>
+      </ul>
+      可以看到，只是用一个数字，我们<strong>根本没有办法表达这种"既近又远"的关系</strong>。
+    </div>
+
+    <div class="img-block">
+      <img src="assets/frame-13-near-far.jpg" alt="香蕉 20 / 苹果 21 / Apple 22 / りんご 23">
+      <div class="cap">📷 香蕉 20、苹果 21、Apple 22、りんご 23 —— 编号拉不开"既近又远"的关系</div>
+    </div>
+  </div>
+</section>
+
+<!-- 三、Embedding -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📐</span> 三、Embedding：用一个向量描述一个词</h2>
+    <p>既然一个数不行，我们就多用几个数</p>
+  </div>
+
+  <div class="card">
+    <h3>1）从一维编号到多维向量</h3>
+    <p>那么解决方法是什么呢？<strong>既然一个数不行，我们就多用几个数呗。</strong></p>
+    <p>于是人们也不管 token 到底是多少了，他们把 token 又做了一次转化，变成了一个<strong>多维的向量</strong>。向量中的每个数字都代表了 token 的某些特征：</p>
+
+    <table>
+      <tr><th>第 1 个数</th><th>第 2 个数</th><th>第 3 个数</th><th>第 4 个数</th><th>…</th></tr>
+      <tr><td>语言</td><td>形状</td><td>颜色</td><td>类别</td><td>…</td></tr>
+    </table>
+
+    <div class="img-block">
+      <img src="assets/frame-14-multi-number.jpg" alt="用多个数！">
+      <div class="cap">📷 既然一个数不行，那就"用多个数！"</div>
+    </div>
+
+    <p>于是：</p>
+    <table>
+      <tr><th>词</th><th>语言</th><th>形状</th><th>颜色</th><th>类别</th></tr>
+      <tr><td>苹果</td><td>1（中文）</td><td>1（圆）</td><td>1（红）</td><td>1（水果）</td></tr>
+      <tr><td>りんご</td><td>2（日文）</td><td>1</td><td>1</td><td>1</td></tr>
+      <tr><td>Apple</td><td>3（英文）</td><td>1</td><td>1</td><td>1</td></tr>
+      <tr><td>香蕉</td><td>1（中文）</td><td>2（长）</td><td>2（黄）</td><td>1（水果）</td></tr>
+    </table>
+
+    <div class="img-block">
+      <img src="assets/frame-15-features.jpg" alt="苹果=中文+圆的+红的+水果">
+      <div class="cap">📷 于是苹果可能就是"中文 + 圆的 + 红的 + 水果 = 1 1 1 1"</div>
+    </div>
+
+    <p>这样一来，我们就可以很容易地表达出 香蕉 / 苹果 / Apple 这些<strong>既近又远</strong>的关系了。</p>
+
+    <div class="highlight blue">
+      <strong>💡 定义</strong>
+      而这个把 token 转化成一串数字的过程，就叫做 <strong>Embedding</strong>。
+    </div>
+
+    <div class="img-block">
+      <img src="assets/frame-16-embedding-def.jpg" alt="Embedding 定义">
+      <div class="cap">📷 这个把 token 转化成一串数字的过程，就叫做 embedding</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>2）Embedding 的维度：d_model / n_embd</h3>
+    <p>实际模型中的 embedding 维度远不止 4 个：</p>
+    <table>
+      <tr><th>模型</th><th>Embedding 维度</th></tr>
+      <tr><td>GPT-2 XL</td><td><strong>1600</strong> 个数字</td></tr>
+      <tr><td>DeepSeek R1</td><td><strong>7168</strong> 个数字</td></tr>
+      <tr><td>Gemini 3 / GPT-5</td><td>未公布，猜测已经上万</td></tr>
+    </table>
+
+    <div class="highlight purple">
+      <strong>📌 维度越高，模型看世界的角度越细腻</strong>
+      1600 个维度，就是从 1600 个不同的方面去描述一个词。Embedding 中数字的多少，通常被称为 <code>d_model</code> 或者 <code>n_embd</code>。
+    </div>
+
+    <div class="img-block">
+      <img src="assets/frame-17-dimensions.jpg" alt="GPT-2 XL 1600 / DeepSeek R1 7168">
+      <div class="cap">📷 GPT-2 XL 是 1600，DeepSeek R1 更是高达 7168 个数字</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>3）本质区别：Tokenizer 可以手工设计，Embedding 不行</h3>
+    <p>所以：Tokenizer 是把用户文字转化成数字（token），而 Embedding 是把 token 转化成向量。这两个东西的功能虽然看起来比较相似，但它们有一个<strong>本质上的不同</strong>。</p>
+
+    <div class="compare">
+      <div class="col left">
+        <h4>🔧 Tokenizer</h4>
+        <ul>
+          <li>设计时可以<strong>写程序统计单词频率</strong></li>
+          <li>甚至麻烦一点<strong>手工设计</strong>也非常可行</li>
+          <li>属于<strong>数据预处理</strong>，不是模型的一部分</li>
+        </ul>
+      </div>
+      <div class="col right">
+        <h4>🧠 Embedding</h4>
+        <ul>
+          <li>向量包含<strong>几千几万个维度</strong></li>
+          <li>还要为<strong>每一个 token 合理分配</strong>这些维度对应的数字</li>
+          <li>这显然<strong>不是一个手工可以完成的任务</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight green">
+      <strong>✅ 没错：Embedding 模块是训练出来的</strong>
+      <strong>Embedding 本身就是大语言模型的一部分。</strong>（视频中用"一串课末模型的基础架构"作示意，embedding 就是图中 Input Embedding 这一部分。）
+    </div>
+
+    <div class="img-block">
+      <img src="assets/frame-20-model-arch.jpg" alt="Tokenizer vs Embedding 与 Transformer 架构图">
+      <div class="cap">📷 Tokenizer 可以写程序 / 手动设计；Embedding 有上万个维度、上万个 token，无法手动设计</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>4）既然 Embedding 是训练出来的，每个数字代表什么？</h3>
+    <p>那么既然 embedding 是训练出来的，embedding 向量中每个数字代表的意义，也就<strong>不是人工设计的</strong>了。</p>
+
+    <div class="highlight red">
+      <strong>❗ 人类暂时还解释不了</strong>
+      <ul>
+        <li>每个数字的含义，人类暂时还没有办法解释；</li>
+        <li>甚至就连"是一个数字代表一个特征"，还是"多个数字组合起来代表一个特征"，人类也都还没有弄清楚；</li>
+        <li>训练的时候，模型会<strong>自动识别出如何划分特征</strong>，并且为每一个 token 自动分配特征对应的数字。</li>
+      </ul>
+      我们不知道这些数字背后代表的是什么，我们唯一知道的就是：<strong>这么做效果还不错</strong>。
+    </div>
+
+    <p>我想，这也是 AI 的魅力之一吧。</p>
+  </div>
+</section>
+
+<!-- 四、Embedding 实现 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">⚙️</span> 四、Embedding 到底是怎么实现的</h2>
+    <p>One-Hot 编码 + 一层最普通的 Linear</p>
+  </div>
+
+  <div class="card">
+    <h3>1）第一步：把 token 写成 One-Hot 编码</h3>
+    <p>这里我们假设词表大小 Vocab Size 是 <strong>50257</strong>，而 embedding 的维度是 <strong>1600</strong>。</p>
+    <p>那我们就先把每一个 token 都写成一个长度是 50257 的向量：向量中几乎所有的数字都是 0，<strong>只有 token 对应的那个数字是 1</strong>。这种编码的方式叫做 <strong>One-Hot 编码</strong>。于是 token 本身就变成了一个向量。</p>
+
+    <div class="img-block">
+      <img src="assets/frame-23-onehot.jpg" alt="One-Hot 编码示意">
+      <div class="cap">📷 1（点赞）= 1 0 0 0 0 … 0；2（投币）= 0 1 0 0 0 … 0；向量中几乎所有的数字都是零</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>2）第二步：过一层 Linear</h3>
+    <p>而 embedding 的实现，就是一个最最普通的<strong>线性变换层 Linear</strong>：</p>
+
+    <div class="flow">
+      <div class="flow-item">
+        <div class="label">One-Hot 向量</div>
+        <div class="sub-label">输入 50257 维</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item">
+        <div class="label">Linear</div>
+        <div class="sub-label">线性变换层</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item">
+        <div class="label">Embedding</div>
+        <div class="sub-label">输出 1600 维</div>
+      </div>
+    </div>
+
+    <ul>
+      <li>它的输入是 <strong>50257 维向量</strong>，也就是经过 One-Hot 编码后的 token；</li>
+      <li>它的输出是 <strong>1600 维向量</strong>，也就是 token embedding 后的结果。</li>
+    </ul>
+
+    <div class="img-block">
+      <img src="assets/frame-24-linear.jpg" alt="One-Hot → Linear → Embedding">
+      <div class="cap">📷 它的输入是 50257 维向量，输出 1600 维 embedding</div>
+    </div>
+
+    <div class="highlight orange">
+      <strong>⚠️ 工程实现上的差异</strong>
+      虽然在工程上 embedding 的实现可能并不是简单的线性层，比如说还可以通过<strong>查表</strong>或者<strong>稀疏矩阵</strong>来实现，不过这些都属于优化的范畴了 —— 它们<strong>本质上的数学原理是一样的</strong>。
+    </div>
+
+    <div class="img-block">
+      <img src="assets/frame-26-final-linear.jpg" alt="Linear 输出 1600 个数字，查表/稀疏矩阵">
+      <div class="cap">📷 输出 1,600 个数字；工程上也可用查表、稀疏矩阵实现</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>3）最后一步：模型末尾的"逆操作"</h3>
+    <p>最后一个问题：embedding 之后，原本是一个数字的 token 变成了 1600 个数字的向量 —— <strong>模型自己理解起来是方便了，但是人类却理解不了了</strong>。</p>
+    <p>所以大多数大模型在最后，会增加另外一个线性层，这其实就相当于 <strong>embedding 层的逆操作</strong>：</p>
+
+    <div class="layers">
+      <div class="layer l1">
+        <div class="layer-title">① 最底部（Input Embedding）<span class="pill">token → 向量</span></div>
+        <p>就是我们刚刚介绍的 token embedding，处在模型最下边的位置。</p>
+      </div>
+      <div class="layer l2">
+        <div class="layer-title">② 中间一大坨 Transformer<span class="pill">处理的都是 embedding</span></div>
+        <p>Transformer 中间这一大坨东西，处理的都是 embedding 本身，最后输出的还是 embedding。</p>
+      </div>
+      <div class="layer l3">
+        <div class="layer-title">③ 最顶部的 Linear + Softmax<span class="pill">向量 → token</span></div>
+        <p>最后的这个线性层，把输出的 embedding 转化回<strong>人类方便理解的 token</strong>。</p>
+      </div>
+    </div>
+
+    <div class="highlight blue">
+      <strong>💡 记住这条链路</strong>
+      token →（Embedding）→ 向量 →（Transformer）→ 向量 →（Linear）→ token
+    </div>
+  </div>
+</section>
+
+<!-- 五、RAG Embedding -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🔍</span> 五、RAG Embedding 和 LLM Embedding 是一回事吗</h2>
+    <p>不一样，但又有关系</p>
+  </div>
+
+  <div class="card">
+    <h3>1）先看区别</h3>
+    <p>对 RAG 比较了解的朋友听到这里可能就要急了："老王老王，你说的这些都不对 —— 我学过 RAG，RAG 里的 embedding 明明是把<strong>一整段话</strong>转化成一个向量，不是像你这样一个 token 一个 token 转化的。"</p>
+    <p>没错，说得没错。RAG 的 embedding 和大语言模型的 embedding 确实是不一样的：</p>
+
+    <div class="compare">
+      <div class="col left">
+        <h4>🤖 LLM Embedding</h4>
+        <ul>
+          <li>把 <strong>token</strong> 中内涵的特征<strong>打散</strong>成一个向量</li>
+          <li>粒度：<strong>一个词</strong></li>
+          <li>位置：模型最<strong>下边</strong>的 Input Embedding</li>
+        </ul>
+      </div>
+      <div class="col right">
+        <h4>📚 RAG Embedding</h4>
+        <ul>
+          <li>把 <strong>一整段话</strong>转化成<strong>概括大意</strong>的向量</li>
+          <li>粒度：<strong>一段话</strong></li>
+          <li>位置：模型最<strong>上边</strong>未转化的输出</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="img-block">
+      <img src="assets/frame-29-rag-purpose.jpg" alt="RAG Embedding 概括一段话 / LLM Embedding 打散一个词">
+      <div class="cap">📷 RAG Embedding 概括一段话；LLM Embedding 打散一个词</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>2）再看联系：RAG 用的是"未转化的输出"</h3>
+    <p>但是它们二者之间其实又是有关系的。你还记得 Transformer 模型的最后一步做的是什么吗？</p>
+    <p>通过一个线性层，把模型输出的 embedding 转化回方便人类理解的 token。而<strong>这个没有经过转化的、模型输出的 embedding，它基本就是 RAG 的 embedding 了</strong>。</p>
+
+    <div class="img-block">
+      <img src="assets/frame-30-output-embedding.jpg" alt="模型输出的 Embedding 与人类可理解的 Token">
+      <div class="cap">📷 Linear 之上是人类可以理解的 Token；Linear 之下、模型输出的 Embedding 基本就是 RAG embedding</div>
+    </div>
+
+    <div class="highlight orange">
+      <strong>⚠️ 特别澄清一句</strong>
+      并不是说我们训练一次模型，就能同时得到 token embedding 和 RAG embedding。
+      <ul>
+        <li><strong>Token embedding</strong> 是训练大语言模型的一部分；</li>
+        <li>而想得到 <strong>RAG embedding</strong> 则是要<strong>单独训练</strong>的；</li>
+        <li>只是它们二者的模型结构大致相同。</li>
+      </ul>
+    </div>
+
+    <p>当然了，最后大语言模型会把 embedding 转化回 token 一样，RAG embedding 的模型最后一般也还会做一些后续的处理，比如说<strong>池化（Pooling）</strong>什么的。</p>
+  </div>
+
+  <div class="card">
+    <h3>3）架构上的小区别：RAG 不做 mask</h3>
+    <p>还有一点小区别：和大语言模型不同，<strong>RAG 的 Transformer 结构一般不会进行 mask</strong>，也就是所谓的 <strong>encoder-only 架构</strong>，或者是 <strong>BERT 模型</strong>。</p>
+
+    <table>
+      <tr><th>对比项</th><th>LLM 模型</th><th>RAG 模型</th></tr>
+      <tr><td>Attention</td><td>Masked Multi-Head Attention</td><td>Multi-Head Attention（无 mask）</td></tr>
+      <tr><td>架构类型</td><td>decoder-only</td><td>encoder-only（BERT 类）</td></tr>
+      <tr><td>顶部结构</td><td>Linear → Softmax</td><td>Pooling</td></tr>
+      <tr><td>输出目标</td><td>下一个 token</td><td>一个概括大意的向量</td></tr>
+    </table>
+
+    <div class="img-block">
+      <img src="assets/frame-32-encoder-only.jpg" alt="RAG 模型结构">
+      <div class="cap">📷 RAG 模型：顶部是 Pooling，Attention 不做 mask —— 也就是所谓的 encoder-only 架构</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>4）最大的不同：训练方式</h3>
+    <p>当然了，上面其实都是一些小修小补。它们二者<strong>最大的不同来自于训练方式的不同</strong>。</p>
+
+    <h3 class="sub">🤖 训练大语言模型：文字接龙</h3>
+    <p>在训练大语言模型的时候，我们期望的输出是<strong>文字接龙游戏中的下一个 token</strong>。所以在训练的时候，我们提供的是文字接龙的素材：</p>
+    <pre>输入：老王          →  训练模型输出：爱
+输入：老王爱        →  训练模型输出：吃
+输入：老王爱吃      →  训练模型输出：苹果</pre>
+
+    <h3 class="sub">📚 训练 RAG Embedding：一对一对的文本片段</h3>
+    <p>而在训练 RAG embedding 的时候，我们的目的就不是文字接龙了，而是<strong>概括文字的含义</strong>。所以训练的素材就变成了一对一对的文本片段。</p>
+
+    <div class="img-block">
+      <img src="assets/frame-33-training-diff.jpg" alt="LLM 模型 vs RAG 模型：训练方式不同">
+      <div class="cap">📷 LLM 模型 vs RAG 模型 —— 训练方式不同</div>
+    </div>
+
+    <div class="img-block">
+      <img src="assets/frame-35-positive.jpg" alt="正样本：老王爱吃苹果 与 小王爱吃香蕉">
+      <div class="cap">📷 输入"老王爱吃苹果"和另外一个意思相关的句子</div>
+    </div>
+
+    <h3 class="sub">正样本：让差距足够小</h3>
+    <p>假如我想训练"老王爱吃苹果"的 embedding，我们就应该输入"老王爱吃苹果"本身，和另外一个和它意思相关的句子，比如说"小王爱吃香蕉"。</p>
+    <p>由于这两个句子都是描述"某人爱吃什么"的片段，所以我们在训练的时候，就应该让模型输出的 embedding <strong>差距足够小</strong>。在这里，"小王爱吃香蕉"也被叫做<strong>正样本</strong>。</p>
+
+    <h3 class="sub">负样本：让差距足够大</h3>
+    <p>而如果输入变成了"老王爱吃苹果"和"老李找到了女朋友" —— 考虑到老王既不是老李，老王也不可能找到女朋友，所以这两个文字可以说是<strong>毫无关联</strong>。所以我们在训练的时候，就应该让模型输出的 embedding <strong>差距足够大</strong>。在这里，"老李找到了女朋友"也被叫做<strong>负样本</strong>。</p>
+
+    <div class="img-block">
+      <img src="assets/frame-37-contrastive.jpg" alt="对比学习：让差距足够大">
+      <div class="cap">📷 老王爱吃苹果 vs 老李找到了女朋友 —— 让差距足够大</div>
+    </div>
+
+    <div class="highlight green">
+      <strong>✅ 这种训练方式叫做 Contrastive Learning（对比学习）</strong>
+      正样本拉近，负样本推远 —— 这就是 RAG embedding 能够"读懂语义"的根本原因。
+    </div>
+  </div>
+</section>
+
+<!-- 六、哲学 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🌌</span> 六、哲学：同一套架构，不同的经历</h2>
+    <p>视频最后 1 分钟的升华</p>
+  </div>
+
+  <div class="card">
+    <div class="highlight purple">
+      <strong>💭 同一种架构，换一套训练方式，得到完全不一样的功能</strong>
+      于是，明明是同一种架构，换了一套训练方式，就得到了完全不一样的功能。
+    </div>
+
+    <p>这正像我们每个人的<strong>底层架构其实都是一样的</strong>，但正因为<strong>不同的经历</strong>：</p>
+    <ul>
+      <li>才有了此刻正在屏幕前学习 AI 底层原理的<strong>你</strong>；</li>
+      <li>也有了躲在屏幕后面，看着你们留言鼓励而偷笑的<strong>我</strong>；</li>
+      <li>以及那个在世界的某个角落，正在为生活而努力的他。</li>
+    </ul>
+
+    <p>这些<strong>截然不同的人生轨迹</strong>，训练出了世界上<strong>独一无二的我们</strong>。如果你坚持看到了这里，那大概我们的训练都挺好的。</p>
+
+    <div class="img-block">
+      <img src="assets/frame-38-philosophy.jpg" alt="哲学段落">
+      <div class="cap">📷 "才有了此刻正在屏幕前学习 AI 底层原理的你"</div>
+    </div>
+
+    <div class="highlight blue">
+      <strong>🎬 结尾</strong>
+      "这里是隔壁老王，很高兴在<strong>万维的向量空间中，与你产生交集</strong>。我们下期再见。"
+    </div>
+  </div>
+</section>
+
+<!-- 速查表 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📋</span> 一页速查</h2>
+    <p>把整期视频压缩成一张表</p>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>问题</th><th>结论</th></tr>
+      <tr><td>大模型为什么处理 token 而不是文字？</td><td>计算机里文字是离散字符，直接处理效率太低；用编号代表词/词片段更高效</td></tr>
+      <tr><td>token 和单词一一对应吗？</td><td>不。一个词可能被拆成多个 token（oldest → old + est），好处是能处理没见过的词</td></tr>
+      <tr><td>什么决定中文处理效率？</td><td>词表大小 Vocab Size。GPT-2 只有 50257，GPT-4o 的 o200k_base 有 20 万</td></tr>
+      <tr><td>Tokenizer 属于模型的一部分吗？</td><td>不属于。它是数据预处理，训练时固定不变</td></tr>
+      <tr><td>为什么一个 token 编号不够？</td><td>一维数字无法表达"既近又远"的关系（香蕉 vs 苹果 vs Apple）</td></tr>
+      <tr><td>Embedding 是什么？</td><td>把 token 转化成一串数字（多维向量），每个维度代表某些特征</td></tr>
+      <tr><td>Embedding 可以手工设计吗？</td><td>不行。几千几万个维度必须训练出来，它是大模型的一部分</td></tr>
+      <tr><td>Embedding 怎么实现的？</td><td>token → One-Hot（50257 维）→ Linear → embedding（1600 维）</td></tr>
+      <tr><td>模型最后那个 Linear 干什么？</td><td>Embedding 层的逆操作，把向量转回人类可读的 token</td></tr>
+      <tr><td>RAG embedding 与 LLM embedding 的区别？</td><td>RAG：一整段话 → 概括大意的向量；LLM：单个 token → 打散特征的向量</td></tr>
+      <tr><td>二者的联系？</td><td>模型最顶部"未经过 Linear 转化"的输出 embedding，基本就是 RAG embedding</td></tr>
+      <tr><td>训练方式差异？</td><td>LLM 是文字接龙（预测下一个 token）；RAG 是对比学习（正样本拉近、负样本推远）</td></tr>
+      <tr><td>架构差异？</td><td>RAG 一般不做 mask，是 encoder-only（BERT 类）；LLM 是 masked / decoder-only</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 术语表 -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📖</span> 术语表</h2>
+    <p>视频中的关键概念</p>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>术语</th><th>解释</th></tr>
+      <tr><td><strong>Token</strong></td><td>代表字词或字词片段的编号，是大模型的输入单位</td></tr>
+      <tr><td><strong>Tokenizer</strong></td><td>把文字转成 token、把 token 转回文字的程序；属于数据预处理，不是模型的一部分</td></tr>
+      <tr><td><strong>词表大小（Vocab Size）</strong></td><td>一个 Tokenizer 认识的所有 token 数量，如 GPT-2 的 50257、GPT-4o 的 20 万</td></tr>
+      <tr><td><strong>BPE</strong></td><td>tiktoken 使用的分词算法</td></tr>
+      <tr><td><strong>WordPiece</strong></td><td>Google 的分词算法，也是其 Tokenizer 库的名字</td></tr>
+      <tr><td><strong>Embedding</strong></td><td>把 token 转化成一串数字（多维向量）的过程；在大模型中指 Input Embedding 层</td></tr>
+      <tr><td><strong>d_model / n_embd</strong></td><td>Embedding 的维度，即向量中数字的个数，如 GPT-2 XL 的 1600、DeepSeek R1 的 7168</td></tr>
+      <tr><td><strong>One-Hot 编码</strong></td><td>长度为词表大小、只有对应位置为 1 的向量，是 embedding 的输入形式</td></tr>
+      <tr><td><strong>Linear（线性层）</strong></td><td>最普通的神经网络基本结构；embedding 的实现就是把 One-Hot 向量过一层 Linear</td></tr>
+      <tr><td><strong>Pooling（池化）</strong></td><td>RAG embedding 模型顶部的后处理，把序列向量汇总成一个段落向量</td></tr>
+      <tr><td><strong>Encoder-only / BERT</strong></td><td>不做 mask 的 Transformer 结构，RAG embedding 模型通常采用</td></tr>
+      <tr><td><strong>正样本 / 负样本</strong></td><td>对比学习中语义相关的文本对（拉近）与无关的文本对（推远）</td></tr>
+      <tr><td><strong>Contrastive Learning</strong></td><td>对比学习：通过拉近正样本、推远负样本来训练 embedding 的方法</td></tr>
+      <tr><td><strong>RAG</strong></td><td>检索增强生成；其 embedding 用于把整段文本压成一个可用于检索的语义向量</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <p>🎬 本笔记根据视频内容整理 · 配图截取自视频原片</p>
+  <p>原始视频：<a href="https://www.bilibili.com/video/BV1oNv8BPE2m" target="_blank" rel="noopener">B站 BV1oNv8BPE2m</a> · 《15分钟弄懂Token和Embedding —— 详解LLM与RAG的数据处理机制》 · UP主：隔壁的程序员老王</p>
+  <p><a href="../">← 返回知识库首页</a></p>
+</footer>
+
+</body>
+</html>
