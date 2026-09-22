@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Engineering：概念与技术实现深度解析 — 图文学习笔记</title>
+<meta name="description" content="讲清 Context、Context Window 与 Context Engineering：三大现实问题，以及保存、选择、压缩、隔离四大实现方法。">
+<style>
+  :root {
+    --bg: #fafaf7;
+    --card: #ffffff;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --orange: #d97706;
+    --orange-light: #fef3c7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --purple: #7c3aed;
+    --purple-light: #ede9fe;
+    --text: #1f2937;
+    --text-dim: #6b7280;
+    --text-dimmer: #9ca3af;
+    --border: #e5e7eb;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+    color: white;
+    padding: 60px 24px 50px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: clamp(26px, 4.6vw, 40px);
+    font-weight: 800;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+  .hero p {
+    font-size: clamp(15px, 2.5vw, 18px);
+    opacity: 0.9;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .hero .meta {
+    margin-top: 20px;
+    font-size: 14px;
+    opacity: 0.75;
+  }
+
+  /* Layout */
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
+  section { padding: 48px 0; }
+  section + section { border-top: 1px solid var(--border); }
+
+  /* Section headers */
+  .sec-head { margin-bottom: 28px; }
+  .sec-head h2 {
+    font-size: clamp(22px, 4vw, 28px);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .sec-head h2 .emoji { font-size: 1.2em; }
+  .sec-head p { color: var(--text-dim); font-size: 15px; }
+
+  /* Sub heading */
+  h3.sub {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 26px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card p, .card li { font-size: 15px; color: var(--text); }
+  .card p + p { margin-top: 10px; }
+  .card ul, .card ol { padding-left: 22px; margin-top: 10px; }
+  .card li + li { margin-top: 6px; }
+
+  /* Highlight boxes */
+  .highlight {
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin: 16px 0;
+  }
+  .highlight.blue { background: var(--accent-light); border-left: 4px solid var(--accent); }
+  .highlight.green { background: var(--green-light); border-left: 4px solid var(--green); }
+  .highlight.orange { background: var(--orange-light); border-left: 4px solid var(--orange); }
+  .highlight.red { background: var(--red-light); border-left: 4px solid var(--red); }
+  .highlight.purple { background: var(--purple-light); border-left: 4px solid var(--purple); }
+  .highlight > strong:first-child { display: block; margin-bottom: 6px; }
+  .highlight ul { margin-top: 6px; }
+
+  /* Code blocks */
+  pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px;
+    line-height: 1.7;
+    margin: 16px 0;
+  }
+  pre code { color: inherit; background: none; padding: 0; }
+  code {
+    background: #f1f5f9;
+    color: #db2777;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+  }
+
+  /* Images */
+  .img-block {
+    margin: 20px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    background: #fff;
+  }
+  .img-block img {
+    width: 100%;
+    display: block;
+  }
+  .img-block .cap {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-dim);
+    background: #f9fafb;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    margin: 24px 0;
+  }
+  .flow-item {
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 14px 20px;
+    text-align: center;
+    min-width: 110px;
+    box-shadow: var(--shadow);
+  }
+  .flow-item .num {
+    display: inline-block;
+    width: 28px; height: 28px;
+    line-height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .flow-item .label {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .flow-item .sub-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--text-dimmer);
+    font-size: 20px;
+  }
+
+  /* Overview grid */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 18px 0;
+  }
+  .overview-item {
+    background: var(--accent-light);
+    border-radius: 12px;
+    padding: 16px 18px;
+    border-left: 4px solid var(--accent);
+  }
+  .overview-item .label {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.4px;
+  }
+  .overview-item .value {
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  /* Layers */
+  .layers { margin: 22px 0; }
+  .layer {
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    border-left: 5px solid;
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+  .layer.l1 { border-left-color: #f59e0b; }
+  .layer.l2 { border-left-color: var(--accent); }
+  .layer.l3 { border-left-color: var(--green); }
+  .layer .layer-title {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .layer .pill {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: var(--text-dim);
+  }
+  .layer p { font-size: 14.5px; color: var(--text-dim); }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+  tr:hover td { background: #fafafa; }
+
+  /* Two column compare */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .compare .col {
+    border-radius: 12px;
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    background: var(--card);
+  }
+  .compare .col h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .compare .col.left { border-top: 3px solid var(--purple); }
+  .compare .col.right { border-top: 3px solid var(--green); }
+  .compare .col ul { padding-left: 20px; }
+  .compare .col li { font-size: 14px; margin-bottom: 5px; }
+
+  /* Timeline */
+  .timeline { position: relative; margin: 22px 0; padding-left: 26px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 5px; top: 6px; bottom: 6px;
+    width: 2px;
+    background: var(--border);
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -26px; top: 9px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+  }
+  .timeline-item .t-time {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .timeline-item .t-title { font-size: 15px; font-weight: 600; }
+  .timeline-item .t-desc { font-size: 14px; color: var(--text-dim); }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--text-dimmer);
+    font-size: 13px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer p + p { margin-top: 6px; }
+
+  @media (max-width: 640px) {
+    .hero { padding: 40px 16px 36px; }
+    section { padding: 32px 0; }
+    .card { padding: 18px; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .compare { grid-template-columns: 1fr; }
+    .overview-grid { grid-template-columns: 1fr; }
+    pre { font-size: 12.5px; padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>🧭 Context Engineering：概念与技术实现深度解析</h1>
+  <p>Context 是什么、Context Engineering 解决什么问题、又是怎么解决的</p>
+  <div class="meta">来源：B站 BV11zbPzVEUe · 时长 15:15 · UP主：马克的技术工作坊</div>
+</div>
+
+<!-- ============ 30 秒总览 ============ -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">⚡</span> 30 秒总览</h2>
+    <p>不读全文也能知道这一期讲了什么</p>
+  </div>
+
+  <div class="card">
+    <div class="highlight blue">
+      <strong>🎯 核心问题</strong>
+      <strong>Context</strong> 是模型的输入，<strong>Context Window</strong> 是输入的容量上限。
+      那么问题来了：既然窗口这么大，为什么不把所有资料一股脑丢进去？<br>
+      —— 因为有三个绕不开的现实问题。这一期就是讲清这三个问题，以及
+      <strong>Context Engineering（上下文工程）</strong>给出的四类解法。
+    </div>
+
+    <div class="img-block">
+      <img src="assets/context-engineering-intro.jpg" alt="视频要回答的四个问题">
+      <div class="cap">🎬 00:10 · 视频要回答的四个问题：Context 是什么、Context Engineering 是什么、解决了什么问题、怎么解决的</div>
+    </div>
+
+    <div class="overview-grid">
+      <div class="overview-item">
+        <div class="label">Context</div>
+        <div class="value">模型的输入</div>
+      </div>
+      <div class="overview-item">
+        <div class="label">Context Window</div>
+        <div class="value">模型输入的容量上限（Token 数）</div>
+      </div>
+      <div class="overview-item">
+        <div class="label">Context Engineering</div>
+        <div class="value">精心设计给模型的输入内容</div>
+      </div>
+      <div class="overview-item">
+        <div class="label">四大实现角度</div>
+        <div class="value">保存 / 选择 / 压缩 / 隔离</div>
+      </div>
+    </div>
+
+    <div class="highlight green">
+      <strong>✅ 一句话结论</strong>
+      Context Engineering 的核心思想是<strong>不改变模型的结构，只改变模型看到什么</strong> ——
+      让模型在有限的 Context Window 里理解得更准、答得更好、花得更少。
+    </div>
+
+    <p>它的实现方法借鉴了 LangChain 的设计框架，划分为四类：<strong>保存 Context、选择 Context、压缩 Context、隔离 Context</strong>。</p>
+  </div>
+</section>
+
+<!-- ============ 视频时间线 ============ -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📅</span> 视频时间线</h2>
+    <p>按原视频章节顺序</p>
+  </div>
+
+  <div class="card">
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="t-time">00:00 – 00:17</div>
+        <div class="t-title">视频内容介绍</div>
+        <div class="t-desc">Context 是什么？Context Engineering 是什么？解决了什么问题？怎么解决的？</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">00:17 – 04:28</div>
+        <div class="t-title">Context 和 Context Window 介绍</div>
+        <div class="t-desc">Token 与窗口容量、主流模型窗口对比、三大现实问题</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">04:28 – 06:49</div>
+        <div class="t-title">Context Engineering 介绍</div>
+        <div class="t-desc">定义与核心思想；为什么最近才火起来</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">06:49 – 13:17</div>
+        <div class="t-title">Context Engineering 的实现方法</div>
+        <div class="t-desc">保存、选择、压缩、隔离 —— 四类方法逐一说明</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">13:17 – 14:19</div>
+        <div class="t-title">视频总结</div>
+        <div class="t-desc">回顾 Context / Context Window / Context Engineering 与四大实现角度</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">14:19 – 15:15</div>
+        <div class="t-title">相关文章推荐</div>
+        <div class="t-desc">LangChain《Context Engineering》与 Cognition《Don't Build Multi-Agents》</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 一、Context 与 Context Window ============ -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📥</span> 一、Context 与 Context Window</h2>
+    <p>先分清「模型的输入」和「输入的容量上限」</p>
+  </div>
+
+  <div class="card">
+    <p>单纯从外部来看，大模型就像是一个函数：你给它输入，它就会给你输出。</p>
+
+    <div class="img-block">
+      <img src="assets/llm-as-function.jpg" alt="大模型像一个函数">
+      <div class="cap">🎬 00:25 · 大模型就像一个函数：输入 → 输出</div>
+    </div>
+
+    <p>不过大模型的输入是<strong>有大小限制</strong>的，这个限制叫做<strong>上下文窗口</strong>，对应的英文为 <strong>Context Window</strong>。</p>
+
+    <h3 class="sub">📌 Context：模型的输入</h3>
+    <p>这里的 Context 指的就是<strong>模型的输入</strong>，它包含的内容比一般人想象的要多：</p>
+
+    <div class="img-block">
+      <img src="assets/context-definition.jpg" alt="Context 的内容">
+      <div class="cap">🎬 00:45 · Context = 模型输入：用户问题、背景信息、相关资料、可用工具列表、工具执行结果、历史对话</div>
+    </div>
+
+    <ul>
+      <li><strong>用户问题</strong> —— 当前这一轮用户说的话</li>
+      <li><strong>背景信息</strong> —— 系统提示词、角色设定等</li>
+      <li><strong>相关资料</strong> —— 检索回来的文档片段</li>
+      <li><strong>可用工具列表</strong> —— 模型可以调用的工具定义</li>
+      <li><strong>工具执行结果</strong> —— 工具调用返回的内容</li>
+      <li><strong>历史对话</strong> —— 之前几轮的问答记录</li>
+    </ul>
+
+    <p>模型把这些输入作为上下文，并基于这些内容来生成答案。</p>
+
+    <h3 class="sub">📏 Context Window：输入的容量上限</h3>
+
+    <div class="img-block">
+      <img src="assets/context-window.jpg" alt="Context Window 定义">
+      <div class="cap">🎬 01:00 · Context Window = 模型的输入中最多能包含的 Token 数量</div>
+    </div>
+
+    <p><strong>Context Window</strong> 指的是模型的输入中<strong>最多能够包含的 Token 数量</strong>。</p>
+
+    <p>Token 可以理解为文本被拆分成的<strong>最小单位</strong>，可能是一个字、一个词，或者是一个标点符号。
+    一个 Token 大概相当于 <strong>0.75 个单词</strong>，或者是 <strong>1.5 个汉字</strong>。</p>
+
+    <div class="highlight orange">
+      <strong>⚠️ 超过限制会发生什么</strong>
+      一旦超过这个限制，<strong>前面的内容就会被丢弃</strong>，只会保留最后的 N 个 Token。
+      也就是说，超长输入不是「截断报错」，而是「悄悄忘掉最早的内容」。
+    </div>
+
+    <p>以 Gemini 2.5 Pro 为例，它的 Context Window 是 <strong>100 万</strong>，意思是它最多能够处理 100 万个 Token 的输入。</p>
+
+    <div class="img-block">
+      <img src="assets/gemini-1m.jpg" alt="Gemini 2.5 Pro 的 Context Window">
+      <div class="cap">🎬 01:10 · Gemini 2.5 Pro：1,000,000 Context Window</div>
+    </div>
+
+    <p>100 万个 Token 其实是一个相当<strong>大</strong>的容量，接近几本书的长度 ——
+    像 Gemini 2.5 Pro 这样的模型，可以一次装下好几本书。这个容量已经非常惊人了。</p>
+
+    <div class="highlight purple">
+      <strong>💡 由此产生的直觉（以及它的错误）</strong>
+      既然 Context Window 这么大，那是不是就可以把所有资料都丢进去，让模型自己去理解呢？
+      <br>—— 作者给出的答案是：<strong>不对，事实没有那么简单。</strong>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 二、三大现实问题 ============ -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🚧</span> 二、为什么不能全塞进去：三大现实问题</h2>
+    <p>想让模型稳定、高效、准确地输出，绕不开这三件事</p>
+  </div>
+
+  <div class="card">
+    <p>举个具体例子：假设你想做一个智能客服，希望它能回答用户提出的各种关于你们公司产品的问题。
+    大模型虽然很强，但直接问它的话，它只能回答「不知道」—— 毕竟它没有你们公司产品的信息。</p>
+
+    <p>你一想：没关系，我们不是有产品使用手册吗？直接丢给大模型就好了，让它根据手册来回答问题。
+    不管手册有几十页、几百页甚至上千页，都可以直接丢给模型，不用管哪些内容和用户问题相关、哪些不相关。</p>
+
+    <div class="img-block">
+      <img src="assets/chatbot-example.jpg" alt="智能客服示例">
+      <div class="cap">🎬 02:10 · 用户提问「你们产品的保修期多长？」，把产品使用手册直接丢给大模型</div>
+    </div>
+
+    <p>反正 Context Window 这么大，全部丢给它就行了 —— 这看起来没问题，但实际上<strong>行不通</strong>。
+    在实际使用过程中，我们仍然会遇到很多限制，必须考虑三个非常现实的问题：</p>
+
+    <div class="img-block">
+      <img src="assets/three-problems.jpg" alt="三大问题">
+      <div class="cap">🎬 04:00 · 三大问题：窗口有限、输入杂乱、成本上升</div>
+    </div>
+
+    <h3 class="sub">1️⃣ 大多数模型的 Context Window 非常有限</h3>
+    <p>Gemini 2.5 Pro 的 100 万 Context Window 算是很大的了，<strong>大部分模型其实都没有这么大</strong>。
+    看看主流模型的实际大小：</p>
+
+    <div class="img-block">
+      <img src="assets/model-window-compare.jpg" alt="主流模型的 Context Window 大小">
+      <div class="cap">🎬 03:12 · 主流模型的 Context Window 大小对比</div>
+    </div>
+
+    <table>
+      <tr><th>模型</th><th>Context Window</th></tr>
+      <tr><td>Gemini 2.5 Pro</td><td>100 万</td></tr>
+      <tr><td>GPT-5</td><td>40 万</td></tr>
+      <tr><td>Deepseek V3</td><td>12.8 万</td></tr>
+      <tr><td>Claude 4</td><td>20 万</td></tr>
+    </table>
+
+    <p>这些都还算是相当不错的模型了。很多时候为了节省成本，我们可能还会使用一些小模型，
+    它们的 Context Window 可能就只有<strong>几万</strong> —— <strong>连一个产品使用手册也装不下</strong>。</p>
+
+    <h3 class="sub">2️⃣ 输入太杂乱会影响模型的理解</h3>
+    <p>即使你所使用的模型有着非常大的 Context Window，即使我们给模型的输入量没有超过窗口上限，
+    你也<strong>最好不要</strong>把所有相关资料不加筛选全部丢给模型。</p>
+
+    <p>因为如果不加筛选，模型的输入可能就会非常杂乱、冗余矛盾。模型这个时候可能就会<strong>混淆重点</strong>，
+    输出含糊其辞的回答。</p>
+
+    <div class="highlight green">
+      <strong>✅ 正确做法</strong>
+      与其把所有的信息都塞进去，不如经过<strong>精心的设计和组织</strong>，
+      确保模型看到的是准确、有结构、重点突出的内容。
+    </div>
+
+    <h3 class="sub">3️⃣ 输入越多，成本越高</h3>
+    <p>大语言模型的调用成本基本上都是<strong>按照 Token 来计费</strong>的。Token 的数量越多，消耗就会越大。</p>
+
+    <p>如果我们不加控制地塞入大量上下文内容，即使效果还行，也可能会带来不必要的开销 ——
+    尤其是在产品化和大规模使用时。</p>
+
+    <div class="highlight blue">
+      <strong>💡 一句话</strong>
+      <strong>优化输入就是优化成本。</strong>
+    </div>
+
+    <p>所以可以看到，直接把所有资料都发给大模型的方案是行不通的，这里存在很多问题。
+    那该如何解决它们呢？这就引出 Context Engineering 了。</p>
+  </div>
+</section>
+
+<!-- ============ 三、Context Engineering 是什么 ============ -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🛠️</span> 三、Context Engineering 是什么</h2>
+    <p>不改变模型，只改变模型看到什么</p>
+  </div>
+
+  <div class="card">
+    <p>Context Engineering 翻译成中文就是<strong>上下文工程</strong>。从字面上来看，
+    它似乎就是针对 Context 所做的一些技术。回想一下 Context 的含义 ——
+    Context 代表给模型的输入，那 Context Engineering 的含义就是<strong>对模型输入做优化</strong>了。</p>
+
+    <p>简单来说，Context Engineering <strong>关注的不是怎么训练模型</strong>，
+    而是<strong>怎么精心设计给模型的输入内容</strong>，让模型在有限的 Context Window 里面尽可能的理解得更准、答得更好、花得更少。</p>
+
+    <div class="highlight blue">
+      <strong>🎯 核心思想</strong>
+      <strong>不改变模型的结构，只改变模型看到什么。</strong>
+    </div>
+
+    <p>其实 Context 这个概念一直都存在，但是 Context Engineering 这个<strong>词</strong>确实最近一段时间才活起来的。</p>
+  </div>
+</section>
+
+<!-- ============ 四、为什么现在才火 ============ -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🔥</span> 四、为什么现在才火起来</h2>
+    <p>两个原因</p>
+  </div>
+
+  <div class="card">
+    <div class="img-block">
+      <img src="assets/why-popular.jpg" alt="流行的原因">
+      <div class="cap">🎬 05:55 · 流行的两个原因：模型已足够强大、Agent 的兴起</div>
+    </div>
+
+    <h3 class="sub">1️⃣ 模型已足够强大</h3>
+    <p>跟一两年前的模型相比，现在的模型强大的不是一点半点。对于现在的模型来说，
+    你只要给到它<strong>足够精细的要求</strong>，给到它<strong>足够完整的相关资料</strong>，
+    模型就可以给出非常准确、有用的回答。</p>
+
+    <div class="highlight orange">
+      <strong>⚠️ 一个反直觉的判断</strong>
+      在大部分情况下，如果模型的回答不能让你满意，<strong>这并不是因为模型不够强</strong>，
+      而是因为你没有给到模型足够清晰和足够完整的信息。而这一点，正是 Context Engineering 要解决的问题。
+    </div>
+
+    <h3 class="sub">2️⃣ Agent 的兴起</h3>
+    <p>Agent 是一种把大模型和工具结合起来，让模型能够独立感知环境、影响环境，从而解决用户问题的技术。</p>
+
+    <p>Agent 的运行涉及到模型对工具的使用，所以可用工具信息、工具执行结果等等一系列的内容，
+    都会放到模型的输入里面。使用多少次工具，就会有多少个工具执行结果。</p>
+
+    <div class="highlight red">
+      <strong>🚨 Agent 运行时间长了会怎样</strong>
+      Agent 的运行时间长了，这些工具的<strong>执行结果就会占满整个 Context Window</strong>，
+      从而影响到模型后续的回答效果。
+      <br>这也就是为什么 Agent 兴起之后，Context Engineering 的话题也就随之火了起来 ——
+      因为 Context 的管理效果会直接影响到 Agent 的执行结果。
+    </div>
+  </div>
+</section>
+
+<!-- ============ 五、四类实现方法总览 ============ -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🗂️</span> 五、实现方法总览：四类</h2>
+    <p>借鉴 LangChain 的设计框架</p>
+  </div>
+
+  <div class="card">
+    <p>总的来说，Context Engineering 并<strong>不是某一项单一的技术</strong>，
+    而是由<strong>多种技术组成的方法体系</strong>。作者借鉴了 LangChain 的设计框架，
+    把这套技术体系划分为四类：</p>
+
+    <div class="img-block">
+      <img src="assets/four-categories.jpg" alt="四大实现角度">
+      <div class="cap">🎬 08:30 · 四类方法：保存 Context、选择 Context、压缩 Context、隔离 Context</div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-item">
+        <div class="num">1</div>
+        <div class="label">保存</div>
+        <div class="sub-label">Save</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item">
+        <div class="num">2</div>
+        <div class="label">选择</div>
+        <div class="sub-label">Select</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item">
+        <div class="num">3</div>
+        <div class="label">压缩</div>
+        <div class="sub-label">Compress</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item">
+        <div class="num">4</div>
+        <div class="label">隔离</div>
+        <div class="sub-label">Isolate</div>
+      </div>
+    </div>
+
+    <table>
+      <tr><th>方法</th><th>解决的问题</th><th>典型例子</th></tr>
+      <tr><td><strong>保存 Context</strong></td><td>信息持久化 —— 现在不用，但以后可能要用</td><td>ChatGPT 记忆功能</td></tr>
+      <tr><td><strong>选择 Context</strong></td><td>从海量信息中挑出当下最相关的（最核心）</td><td>Cursor Rules、CLAUDE.md、RAG</td></tr>
+      <tr><td><strong>压缩 Context</strong></td><td>历史消息越积越多，挤爆窗口</td><td>Claude Code 的 Auto Compact</td></tr>
+      <tr><td><strong>隔离 Context</strong></td><td>不同模块互相干扰</td><td>Multi-Agent 系统的 SubAgent</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 六、保存 Context ============ -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">💾</span> 六、实现方法 ①：保存 Context</h2>
+    <p>把信息存起来，需要时再取</p>
+  </div>
+
+  <div class="card">
+    <p>保存 Context 就是说，我们把 Context 做个<strong>筛选、总结</strong>，并且找个地方<strong>保存起来</strong>
+    （比如内存、硬盘这类的地方），在模型需要的时候再发给模型。</p>
+
+    <div class="img-block">
+      <img src="assets/save-context.jpg" alt="保存 Context">
+      <div class="cap">🎬 07:10 · 保存 Context：对 Context 做筛选 / 总结，再找个地方存起来</div>
+    </div>
+
+    <p>这里一个比较典型的例子，就是 <strong>ChatGPT 的记忆功能</strong>。</p>
+
+    <p>比如我可能在某次聊天的过程中告诉它：我的名字是马克，我有一个频道叫做马克的技术工作坊，
+    在这个频道里面我分享过关于 Agent、RAG、MCP、A2A 等相关的内容，记住这些！</p>
+
+    <div class="img-block">
+      <img src="assets/chatgpt-memory.jpg" alt="ChatGPT 记忆功能">
+      <div class="cap">🎬 07:40 · 注意到「Updated saved memory」了吗 —— 这代表 ChatGPT 把内容存入记忆库</div>
+    </div>
+
+    <p>注意到这个 <strong>Updated saved memory</strong> 了吗？这就代表 ChatGPT 把这段内容存入到它的<strong>记忆库</strong>里面去了。
+    我们可以打开记忆库来证实这一点。</p>
+
+    <div class="highlight green">
+      <strong>✅ 这一步的意义</strong>
+      这个保存的动作，是 Context Engineering 的<strong>第一步</strong>，
+      它解决了<strong>信息持久化</strong>的问题。
+    </div>
+
+    <p>但光存下来还不够。ChatGPT 的记忆库是可以存放很多条记录的，
+    那在未来的对话中，ChatGPT 是如何从这个庞大的记忆库里面<strong>精准地找到</strong>它所需要的信息呢？
+    这就引出了下一个，也就是最核心的技术 —— <strong>选择 Context</strong>。</p>
+  </div>
+</section>
+
+<!-- ============ 七、选择 Context ============ -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🎯</span> 七、实现方法 ②：选择 Context</h2>
+    <p>最核心的一环：从海量信息里挑出当下需要的</p>
+  </div>
+
+  <div class="card">
+    <p>所谓选择 Context，就是<strong>从海量的信息中选择出一部分与用户问题最为相关的内容</strong>，
+    并且把它们放在模型的 Context 里面。</p>
+
+    <div class="highlight blue">
+      <strong>💡 为什么说它最核心</strong>
+      一个好的选择策略，是整个系统高效准确运行的保障。
+    </div>
+
+    <p>作者把选择策略分为两类：<strong>静态选择</strong>和<strong>动态选择</strong>。</p>
+
+    <div class="img-block">
+      <img src="assets/select-static-dynamic.jpg" alt="静态选择与动态选择">
+      <div class="cap">🎬 09:50 · 静态选择（Cursor Rules / CLAUDE.md）与动态选择（挑选记忆 / 挑选工具）</div>
+    </div>
+
+    <div class="compare">
+      <div class="col left">
+        <h4>📌 静态选择</h4>
+        <ul>
+          <li>永远重要、必须遵守的信息</li>
+          <li>每次请求都全部放进 Context</li>
+          <li>像刻在 AI 脑子里的系统指令 / 核心原则</li>
+          <li>例：Cursor Rules、CLAUDE.md</li>
+        </ul>
+      </div>
+      <div class="col right">
+        <h4>🔄 动态选择</h4>
+        <ul>
+          <li>选择与用户问题最相关的内容</li>
+          <li>不是全塞，而是按需挑选</li>
+          <li>像一个聪明的图书管理员</li>
+          <li>例：挑选记忆、挑选工具、RAG</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="sub">📌 静态选择：全都要</h3>
+    <p>静态选择就是把一些<strong>永远重要、必须要遵守</strong>的信息，在每一次请求时都全部放到 Context 里面。
+    它就像是给 AI 刻在脑子里的系统指令，或者是核心原则。</p>
+
+    <p>比如 Cursor 的 Rules 文件、Claude Code 的 CLAUDE.md 文件 ——
+    这些文件指定了当前项目的一些信息、编码时需要遵守的一些规范等等。
+    这些信息至关重要：<strong>无论用户问什么，这些信息都必须在场</strong>，
+    以确保 AI 的行为符合预期。</p>
+
+    <div class="highlight green">
+      <strong>✅ 策略：对于这类信息，最有效的做法就是「全都要」</strong>
+      只要确保它们加起来不会撑爆 Context Window 就行。
+    </div>
+
+    <h3 class="sub">🔄 动态选择：精准挑</h3>
+    <p>动态选择是指<strong>选择与用户问题最为相关的内容</strong>，并且把它放入到 Context 里面。
+    它不是把所有的东西都塞进去，而是像一个聪明的图书管理员，为你精准地找到需要的那几页。</p>
+
+    <p>比如 ChatGPT 从记忆库中挑选与用户问题最为相关的记忆，这就是一种动态选择。
+    再比如我们从包含数十个甚至数百个工具中，挑选与用户问题最为相关的三个工具放到模型的 Context 里面，
+    这也是一种动态选择。</p>
+
+    <div class="highlight purple">
+      <strong>📚 动态选择最有名的实现方式：RAG</strong>
+      检索增强生成（RAG）本质上就是一种动态选择 —— 从知识库里挑出与问题最相关的片段。
+      本知识库另有 <a href="../rag/">RAG 工作机制详解</a> 与 <a href="../rag-python/">使用 Python 构建 RAG 系统</a> 两篇可以配合阅读。
+    </div>
+  </div>
+</section>
+
+<!-- ============ 八、压缩 Context ============ -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🗜️</span> 八、实现方法 ③：压缩 Context</h2>
+    <p>历史消息越积越多，得想办法瘦身</p>
+  </div>
+
+  <div class="card">
+    <p>Agent 运行时会在 Context 里面积累大量的历史消息。一般来说，这些历史消息中<strong>最占空间</strong>的
+    便是<strong>模型的输出文本</strong>和<strong>工具的执行结果</strong>。</p>
+
+    <p>如果不做处理的话，这些历史消息便会迅速占满 Context 的全部空间，从而影响模型的后续回答效果。</p>
+
+    <p>一个常见的处理方法就是<strong>压缩历史消息</strong>。举一个具体的例子 —— 大家熟悉的 Claude Code，
+    它是一个用于写代码的 Agent。</p>
+
+    <p>在它运行的过程中，它可能会读取很多代码内容，同时也会写入很多代码内容，
+    然后 Claude 可能还会输出一些思考和结论，这些都会放到 Context 里面：</p>
+
+    <div class="img-block">
+      <img src="assets/claude-context-95.jpg" alt="Claude 4 的 Context 占用">
+      <div class="cap">🎬 11:00 · Claude 4 的 Context：读取的 graph.py、写入的 content.txt、Claude 的思考、读取的 category.py、运行终端命令</div>
+    </div>
+
+    <p>如果 Claude Code 不对这些内容做处理的话，那么它的 Context Window 很快就会被各种代码信息挤爆。</p>
+
+    <div class="highlight green">
+      <strong>✅ Claude Code 的处理措施：Auto Compact</strong>
+      当 Claude Code 的使用量<strong>超过 95%</strong> 的时候，Claude Code 便会运行一种叫做
+      <strong>Auto Compact</strong> 的程序，对以往的 Context 做个压缩 ——
+      其实也就是<strong>总结一下之前的内容，然后把原来的内容扔掉</strong>。
+      在总结之后，Context Window 的使用量就会降下来。
+    </div>
+
+    <p>用户甚至还可以在 CLAUDE.md 里面<strong>指定压缩方案</strong>。
+    比如 Claude Code 官方文档里举的例子，就是让 Claude Code 压缩时重点保留测试输出和代码改动方面的内容：</p>
+
+    <div class="img-block">
+      <img src="assets/compact-config.jpg" alt="CLAUDE.md 指定压缩方案">
+      <div class="cap">🎬 11:20 · 官方文档示例：通过 CLAUDE.md 自定义压缩时保留的重点</div>
+    </div>
+
+    <pre><code># Summary instructions
+When you are using compact, please focus on test output and code changes</code></pre>
+
+    <p>这就把「压缩」从一种固定的自动行为，变成了<strong>可配置的策略</strong> —— 你可以告诉它压缩时别丢掉你最在意的信息。</p>
+  </div>
+</section>
+
+<!-- ============ 九、隔离 Context ============ -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🔒</span> 九、实现方法 ④：隔离 Context</h2>
+    <p>让不同模块各管各的，互不干扰</p>
+  </div>
+
+  <div class="card">
+    <p>隔离 Context 意思就是说，<strong>不同模块之间的 Context 是互相隔离的、互不干扰</strong>。
+    这通常发生在 <strong>Multi-Agent（多智能体）系统</strong>里面。</p>
+
+    <p>可以用 Anthropic 的一篇文章来举例，它讲述了 Anthropic 是怎么构建他们的 Multi-Agent 研究系统的。
+    在文章中 Anthropic 提到，系统内部有一个 <strong>Lead Agent</strong>，
+    它负责<strong>任务下发和归纳总结</strong> —— 你可以把它想象为整个系统的<strong>总指挥官</strong>。</p>
+
+    <div class="img-block">
+      <img src="assets/multi-agent-arch.jpg" alt="Multi-Agent 架构">
+      <div class="cap">🎬 12:25 · Lead Agent 下发任务给多个 Subagent：搜索 PDF、搜索网络、搜索图片</div>
+    </div>
+
+    <p>整个流程是这样的：</p>
+    <ol>
+      <li>用户的请求会先打到这个 Lead Agent 里面</li>
+      <li>在接收到用户请求之后，Lead Agent 便会把用户的问题<strong>下发</strong>到其他的 Agent 系统里面 ——
+          Anthropic 称这些 Agent 为 <strong>SubAgent</strong></li>
+      <li>比如 Lead Agent 可能会先发起一个负责<strong>搜索 PDF</strong> 的 SubAgent，拿到 PDF 的搜索结果；
+          再去执行一个负责<strong>搜索网络</strong>的 SubAgent，拿到网络的搜索结果；
+          然后再去执行一个负责<strong>搜索图片</strong>的 SubAgent</li>
+      <li>在拿到所有 SubAgent 结果后，Lead Agent 就会产出一份<strong>最终的报告</strong>给用户看，整个流程也就随之结束</li>
+    </ol>
+
+    <div class="highlight blue">
+      <strong>💡 关键点在哪</strong>
+      这些 SubAgent 系统有着<strong>自己独立的工具、独立的运行历史、独立的记忆体系</strong> ——
+      也就是说，这几个 SubAgent 的 Context 是<strong>互相隔离、互不影响</strong>的。
+      这就是隔离 Context 的一个非常典型的例子：不同的系统拥有不同的 Context，职责清晰，彼此之间互不干扰。
+    </div>
+
+    <p>除此之外，Claude Code 里面也有一个 SubAgent 的概念，跟上面 Multi-Agent 研究系统里面的 SubAgent 有点像，
+    但并<strong>不完全一样</strong>。在 Claude Code 中，每个 SubAgent 也都有着自己独立的 Context，互相隔离。</p>
+
+    <div class="highlight purple">
+      <strong>🔗 与 Harness Engineering 的关系</strong>
+      隔离与分工也是 Harness Engineering 的核心手段之一。
+      本知识库另有 <a href="../harness-engineering/">Harness Engineering 到底是什么？</a> 一篇，
+      其中 Anthropic 的 planner / generator / evaluator 三 Agent 架构，正是隔离 Context 的另一种落地形式。
+    </div>
+  </div>
+</section>
+
+<!-- ============ 十、总结与延伸阅读 ============ -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🎯</span> 十、视频总结与延伸阅读</h2>
+    <p>回顾四个核心概念，以及作者推荐的两篇文章</p>
+  </div>
+
+  <div class="card">
+    <div class="img-block">
+      <img src="assets/summary-grid.jpg" alt="视频总结">
+      <div class="cap">🎬 13:55 · 四个核心概念与四大实现方式</div>
+    </div>
+
+    <h3 class="sub">📌 四个核心概念</h3>
+    <table>
+      <tr><th>概念</th><th>含义</th></tr>
+      <tr><td><strong>Context</strong></td><td>模型的输入</td></tr>
+      <tr><td><strong>Context Window</strong></td><td>模型输入的容量上限，一般以 Token 数量为单位（如 Gemini 2.5 Pro 是 100 万）</td></tr>
+      <tr><td><strong>Context Engineering</strong></td><td>精心设计给模型的输入内容，让模型在有限的 Context Window 里理解得更准、答得更好、花得更少</td></tr>
+      <tr><td><strong>四大实现角度</strong></td><td>保存 Context、选择 Context、压缩 Context、隔离 Context</td></tr>
+    </table>
+
+    <div class="highlight blue">
+      <strong>💡 最后值得一提的是</strong>
+      Context Engineering <strong>并不是某个特定而具体的技术，而是某一类技术的统称</strong>。
+      它所包含的技术可以说是五花八门，视频里也仅仅是管中窥豹，举了几个相关的例子。
+    </div>
+
+    <h3 class="sub">📚 延伸阅读</h3>
+
+    <p><strong>1. LangChain《Context Engineering》</strong></p>
+
+    <div class="img-block">
+      <img src="assets/article-langchain.jpg" alt="LangChain 文章">
+      <div class="cap">🎬 14:22 · 第一篇：LangChain 的 Context Engineering</div>
+    </div>
+
+    <p>这篇文章系统讲述了 Context Engineering 的概念和方法，通读一遍可以学到很多东西。
+    本视频也借鉴了这篇文章中的不少内容。</p>
+    <p><a href="https://blog.langchain.com/context-engineering-for-agents/" target="_blank" rel="noopener">blog.langchain.com/context-engineering-for-agents/</a></p>
+
+    <p><strong>2. Cognition《Don't Build Multi-Agents》</strong></p>
+
+    <div class="img-block">
+      <img src="assets/article-cognition.jpg" alt="Cognition 文章">
+      <div class="cap">🎬 14:37 · 第二篇：Cognition 的 Don't Build Multi-Agents</div>
+    </div>
+
+    <p>这个标题乍一看好像是在反驳前面讲到的 Multi-Agent 系统，<strong>其实不然</strong>。
+    如果你仔细看一下这篇文章的话，你就会发现它其实并没有反驳 Multi-Agent 系统，
+    它只是认为<strong>多个 Agent 并行执行的方法是行不通的</strong>。</p>
+
+    <div class="highlight orange">
+      <strong>⚠️ 这篇文章真正的观点</strong>
+      如果一定要做 Multi-Agent 系统的话，各个 Agent 的运行也<strong>必须要串联执行</strong>，
+      并且要做好 <strong>Context Engineering</strong>，确保给模型的输入简洁明了。
+      <br>所以在看完这篇文章之后，你可以同时学到 <strong>Agent 的构建策略</strong>与 <strong>Context Engineering</strong> 两方面的内容。
+    </div>
+    <p><a href="https://cognition.ai/blog/dont-build-multi-agents" target="_blank" rel="noopener">cognition.ai/blog/dont-build-multi-agents</a></p>
+  </div>
+</section>
+
+<!-- ============ 一页速查 ============ -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📋</span> 一页速查</h2>
+    <p>把整期视频压缩成一张表</p>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>问题</th><th>结论</th></tr>
+      <tr><td>Context 是什么？</td><td>模型的输入，包括用户问题、背景信息、相关资料、可用工具列表、工具执行结果、历史对话</td></tr>
+      <tr><td>Context Window 是什么？</td><td>模型的输入中最多能包含的 Token 数量</td></tr>
+      <tr><td>Token 怎么换算？</td><td>1 Token ≈ 0.75 个单词 ≈ 1.5 个汉字</td></tr>
+      <tr><td>超过 Context Window 会怎样？</td><td>前面的内容被丢弃，只保留最后的 N 个 Token</td></tr>
+      <tr><td>主流模型的窗口有多大？</td><td>Gemini 2.5 Pro 100 万、GPT-5 40 万、Claude 4 20 万、Deepseek V3 12.8 万</td></tr>
+      <tr><td>为什么不把所有资料都丢进去？</td><td>三大问题：窗口有限、输入杂乱会干扰理解、输入越多成本越高</td></tr>
+      <tr><td>Context Engineering 是什么？</td><td>精心设计给模型的输入内容，让模型在有限窗口里更准、更好、更省</td></tr>
+      <tr><td>它的核心思想？</td><td>不改变模型的结构，只改变模型看到什么</td></tr>
+      <tr><td>为什么现在才火？</td><td>① 模型已足够强大 ② Agent 兴起，工具执行结果会占满窗口</td></tr>
+      <tr><td>有哪四类实现方法？</td><td>保存 Context、选择 Context、压缩 Context、隔离 Context</td></tr>
+      <tr><td>什么是保存 Context？</td><td>把 Context 筛选、总结后存到内存/硬盘，需要时再发给模型；例：ChatGPT 记忆功能</td></tr>
+      <tr><td>静态选择 vs 动态选择？</td><td>静态＝永远重要的信息每次全放（Cursor Rules / CLAUDE.md）；动态＝按问题挑最相关的</td></tr>
+      <tr><td>动态选择最有名的实现？</td><td>RAG（检索增强生成）</td></tr>
+      <tr><td>压缩 Context 的典型例子？</td><td>Claude Code 用量超过 95% 时触发 Auto Compact，总结旧内容并丢弃原文</td></tr>
+      <tr><td>压缩方案能自定义吗？</td><td>能，写在 CLAUDE.md 里，例如「压缩时重点保留测试输出和代码改动」</td></tr>
+      <tr><td>什么是隔离 Context？</td><td>不同模块的 Context 互相隔离、互不干扰；典型场景是 Multi-Agent 系统</td></tr>
+      <tr><td>Anthropic 的 Multi-Agent 怎么分工？</td><td>Lead Agent 做任务下发和归纳总结，SubAgent 分别搜 PDF / 网络 / 图片，各自有独立 Context</td></tr>
+      <tr><td>Context Engineering 是某一项技术吗？</td><td>不是，它是某一类技术的统称</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 术语表 ============ -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📖</span> 术语表</h2>
+    <p>视频中出现的关键概念</p>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>术语</th><th>英文</th><th>解释</th></tr>
+      <tr><td><strong>Context</strong></td><td>Context</td><td>模型的输入，包含问题、背景、资料、工具信息与历史对话等</td></tr>
+      <tr><td><strong>Context Window</strong></td><td>Context Window</td><td>模型输入的容量上限，以 Token 数量为单位</td></tr>
+      <tr><td><strong>Token</strong></td><td>Token</td><td>文本被拆分的最小单位，1 Token ≈ 0.75 单词 ≈ 1.5 汉字</td></tr>
+      <tr><td><strong>Context Engineering</strong></td><td>Context Engineering</td><td>上下文工程：精心设计给模型的输入内容，是一类技术的统称</td></tr>
+      <tr><td><strong>保存 Context</strong></td><td>Save / Store</td><td>筛选、总结后持久化保存，需要时再注入 Context</td></tr>
+      <tr><td><strong>选择 Context</strong></td><td>Select</td><td>从海量信息中挑出与问题最相关的部分，分静态与动态两类</td></tr>
+      <tr><td><strong>静态选择</strong></td><td>Static Selection</td><td>永远重要的信息每次请求都全部放入，如 Cursor Rules、CLAUDE.md</td></tr>
+      <tr><td><strong>动态选择</strong></td><td>Dynamic Selection</td><td>按用户问题挑选最相关内容，如挑选记忆、挑选工具、RAG</td></tr>
+      <tr><td><strong>压缩 Context</strong></td><td>Compress</td><td>总结并丢弃旧的历史消息，避免挤爆窗口</td></tr>
+      <tr><td><strong>Auto Compact</strong></td><td>Auto Compact</td><td>Claude Code 在用量超过 95% 时自动压缩 Context 的机制</td></tr>
+      <tr><td><strong>隔离 Context</strong></td><td>Isolate</td><td>让不同模块各自拥有独立 Context，互不干扰</td></tr>
+      <tr><td><strong>Multi-Agent</strong></td><td>Multi-Agent System</td><td>多智能体系统，由 Lead Agent 与若干 SubAgent 组成</td></tr>
+      <tr><td><strong>Lead Agent</strong></td><td>Lead Agent</td><td>多智能体系统中的总指挥，负责任务下发与归纳总结</td></tr>
+      <tr><td><strong>SubAgent</strong></td><td>SubAgent</td><td>子智能体，有独立的工具、运行历史与记忆体系</td></tr>
+      <tr><td><strong>RAG</strong></td><td>Retrieval-Augmented Generation</td><td>检索增强生成，动态选择最著名的实现方式</td></tr>
+      <tr><td><strong>CLAUDE.md</strong></td><td>CLAUDE.md</td><td>Claude Code 的项目配置文件，可承载静态选择信息与压缩方案</td></tr>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <p>🎬 本笔记根据视频内容整理 · 配图截取自视频原片</p>
+  <p>
+    原始视频：<a href="https://www.bilibili.com/video/BV11zbPzVEUe" target="_blank" rel="noopener">B站 BV11zbPzVEUe</a>
+    · 《Context Engineering：概念与技术实现深度解析》
+  </p>
+  <p>UP主：<strong>马克的技术工作坊</strong>（B站 UID：1815948385）</p>
+  <p>内容版权归原作者所有，本页仅作学习笔记与二次整理</p>
+  <p><a href="../">← 返回知识库首页</a></p>
+</footer>
+
+</body>
+</html>

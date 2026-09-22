@@ -17,6 +17,7 @@
 | **Token 与 Embedding** | LLM 与 RAG 的数据处理机制：从编号到语义、Embedding 实现、对比学习 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/token-embedding/) |
 | **MCP 终极指南（基础篇）** | Model Context Protocol 核心概念、配置流程、交互机制、uvx/npx 安装 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/mcp-basics/) |
 | **MCP 终极指南（进阶篇）** | 从零构建 MCP Server、抓包分析协议、终端直接交互、协议本质 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/mcp-advanced/) |
+| **Context Engineering 深度解析** | 上下文工程：Context 与 Context Window、三大现实问题、四类实现方法 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/context-engineering/) |
 | **Harness Engineering 到底是什么？** | 概念演进、OpenAI/Anthropic 实战案例、争议讨论：过渡期的关键技术 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/harness-engineering/) |
 
 > 更多主题持续补充中。
@@ -62,6 +63,10 @@ knowledge-hub/
 │   ├── README.md        # 主题说明
 │   ├── index.html       # 图文笔记正文
 │   └── assets/          # 配图
+├── context-engineering/ # 主题：Context Engineering 深度解析
+│   ├── README.md        # 主题说明
+│   ├── index.html       # 图文笔记正文
+│   └── assets/          # 配图
 ├── harness-engineering/ # 主题：Harness Engineering 到底是什么？
 │   ├── README.md        # 主题说明
 │   ├── index.html       # 图文笔记正文
@@ -90,7 +95,7 @@ knowledge-hub/
 - 本仓库为公开知识库，内容基于公开资料整理与二次加工
 - 笔记中保留原始来源链接，便于追溯
 - 图文配图来源见各主题 `README.md`
-- **笔记格式由 [`STYLE.md`](STYLE.md) 统一约定** —— 八个主题已全部统一到 Template B v3
+- **笔记格式由 [`STYLE.md`](STYLE.md) 统一约定** —— 九个主题已全部统一到 Template B v3
 
 ## 相关文档
 
