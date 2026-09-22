@@ -19,6 +19,7 @@
 | **MCP 终极指南（进阶篇）** | 从零构建 MCP Server、抓包分析协议、终端直接交互、协议本质 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/mcp-advanced/) |
 | **Context Engineering 深度解析** | 上下文工程：Context 与 Context Window、三大现实问题、四类实现方法 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/context-engineering/) |
 | **Harness Engineering 到底是什么？** | 概念演进、OpenAI/Anthropic 实战案例、争议讨论：过渡期的关键技术 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/harness-engineering/) |
+| **Agent 的概念、原理与构建模式** | 从零打造一个简化版 Claude Code：能力边界 → 工具 → ReAct → 系统提示词 → 手写 Agent 主循环 → Plan & Execute（[原始 PDF](https://ytwangdongsheng.github.io/knowledge-hub/agent-from-scratch/original/agent-concepts-and-building-patterns.pdf)） | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/agent-from-scratch/) |
 
 > 更多主题持续补充中。
 
@@ -71,6 +72,11 @@ knowledge-hub/
 │   ├── README.md        # 主题说明
 │   ├── index.html       # 图文笔记正文
 │   └── assets/          # 配图
+├── agent-from-scratch/  # 主题：Agent 概念与简化版 Claude Code
+│   ├── README.md        # 主题说明
+│   ├── index.html       # 图文笔记正文
+│   ├── assets/          # 配图
+│   └── original/        # 原始文档（PDF 原文，可从笔记页直接点击打开）
 └── <主题名>/            # 后续主题按同样结构新增
     ├── README.md
     ├── index.html
@@ -84,9 +90,10 @@ knowledge-hub/
 1. 新建 `<主题名>/` 目录
 2. 照 `STYLE.md` 的骨架写 `index.html`，配图放 `assets/`
 3. 写一份 `README.md` 说明主题内容（简介 / 结论速览 / 文件说明 / 来源）
-4. 在上方「主题目录」表格里加一行
-5. 同步更新 `index.html` 门户首页的卡片与页脚链接
-6. 按 `STYLE.md` §9 跑一遍发布前检查
+4. 若原始资料是本地文档（PDF 等），原样放进 `<主题名>/original/`，并在笔记页、README、门户卡片处给出可点击链接
+5. 在上方「主题目录」表格里加一行
+6. 同步更新 `index.html` 门户首页的卡片与页脚链接
+7. 按 `STYLE.md` §9 跑一遍发布前检查
 
 ---
 
@@ -95,7 +102,7 @@ knowledge-hub/
 - 本仓库为公开知识库，内容基于公开资料整理与二次加工
 - 笔记中保留原始来源链接，便于追溯
 - 图文配图来源见各主题 `README.md`
-- **笔记格式由 [`STYLE.md`](STYLE.md) 统一约定** —— 九个主题已全部统一到 Template B v3
+- **笔记格式由 [`STYLE.md`](STYLE.md) 统一约定** —— 十个主题已全部统一到 Template B v3
 
 ## 相关文档
 

@@ -19,7 +19,7 @@
 | `token-embedding/` | **B v3** | 追加 `.timeline`、`.overview-grid` |
 | `mcp-basics/` `mcp-advanced/` `harness-engineering/` `rag-python/` `context-engineering/` | **B v3** | 新增主题，CSS 与参考实装逐字节一致 |
 
-**Template B v3 是本规范的基准，九个主题现已全部统一。** 详见 §7。
+**Template B v3 是本规范的基准，十个主题现已全部统一。** 详见 §7。
 
 从本文件开始，格式不再依赖「复制上一份制品」。
 
@@ -41,9 +41,13 @@
 <主题名>/
 ├── README.md          # 主题说明：简介、结论速览、文件说明、来源
 ├── index.html         # 图文笔记正文（自包含单文件）
-└── assets/            # 配图（也可用 frames/，同一主题内保持一致）
-    └── frame-*.jpg
+├── assets/            # 配图（也可用 frames/，同一主题内保持一致）
+│   └── frame-*.jpg
+└── original/          # 【可选】原始文档（PDF 等），原样保留
+    └── *.pdf          # 仅在原始资料本身是本地文件时才有
 ```
+
+**关于 `original/`**：当笔记整理自一份本地文档（如 PDF 文章）时，把原文**原样**放进 `original/`，文件名用 ASCII，并在三处给出可点击链接 —— 笔记页（hero 下方高亮框 + 页脚）、主题 `README.md`、门户卡片所在行的说明。这样读者读到任何一处都能一键跳回原文。视频类主题没有这个目录。
 
 ---
 
@@ -520,7 +524,7 @@ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
 
 ## 7. 模板统一状态
 
-**九个主题已全部统一到 Template B v3**，不再存在偏差：
+**十个主题已全部统一到 Template B v3**，不再存在偏差：
 
 | 主题 | 状态 |
 |------|------|
@@ -533,6 +537,7 @@ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
 | `harness-engineering/` | ✅ B v3 |
 | `rag-python/` | ✅ B v3 |
 | `context-engineering/` | ✅ B v3 |
+| `agent-from-scratch/` | ✅ B v3（含可选 `original/` 原始文档） |
 
 迁移方式：把 `token-embedding/index.html` 的 `<style>` 块**原样注入**（保证与规范逐字节一致），正文按下面的映射改写。
 
@@ -597,10 +602,11 @@ foreach ($t in @('section','div','table','ul','pre','footer')) {
 }
 ```
 
-再加两项人工核对：
+再加三项人工核对：
 
 - [ ] 已在门户 `index.html` 加卡片、在 `README.md` 主题目录表加一行、页脚链接加一项
 - [ ] 桌面（900px）与手机（390px）各看一遍，无横向滚动条
+- [ ] 若主题带 `original/`：笔记页与页脚的原文档链接、主题 README 链接、仓库 README 链接三处都能打开原文
 
 确认后：
 

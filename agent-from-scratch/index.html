@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent 的概念、原理与构建模式 — 图文学习笔记</title>
+<meta name="description" content="从零打造一个简化版的 Claude Code：大模型的能力边界、工具、ReAct 循环、系统提示词，到手写 Agent 主循环与 Plan &amp; Execute 模式。">
+<style>
+  :root {
+    --bg: #fafaf7;
+    --card: #ffffff;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --orange: #d97706;
+    --orange-light: #fef3c7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --purple: #7c3aed;
+    --purple-light: #ede9fe;
+    --text: #1f2937;
+    --text-dim: #6b7280;
+    --text-dimmer: #9ca3af;
+    --border: #e5e7eb;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+    color: white;
+    padding: 60px 24px 50px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: clamp(26px, 4.6vw, 40px);
+    font-weight: 800;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+  .hero p {
+    font-size: clamp(15px, 2.5vw, 18px);
+    opacity: 0.9;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .hero .meta {
+    margin-top: 20px;
+    font-size: 14px;
+    opacity: 0.75;
+  }
+
+  /* Layout */
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
+  section { padding: 48px 0; }
+  section + section { border-top: 1px solid var(--border); }
+
+  /* Section headers */
+  .sec-head { margin-bottom: 28px; }
+  .sec-head h2 {
+    font-size: clamp(22px, 4vw, 28px);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .sec-head h2 .emoji { font-size: 1.2em; }
+  .sec-head p { color: var(--text-dim); font-size: 15px; }
+
+  /* Sub heading */
+  h3.sub {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 26px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card p, .card li { font-size: 15px; color: var(--text); }
+  .card p + p { margin-top: 10px; }
+  .card ul, .card ol { padding-left: 22px; margin-top: 10px; }
+  .card li + li { margin-top: 6px; }
+
+  /* Highlight boxes */
+  .highlight {
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin: 16px 0;
+  }
+  .highlight.blue { background: var(--accent-light); border-left: 4px solid var(--accent); }
+  .highlight.green { background: var(--green-light); border-left: 4px solid var(--green); }
+  .highlight.orange { background: var(--orange-light); border-left: 4px solid var(--orange); }
+  .highlight.red { background: var(--red-light); border-left: 4px solid var(--red); }
+  .highlight.purple { background: var(--purple-light); border-left: 4px solid var(--purple); }
+  .highlight > strong:first-child { display: block; margin-bottom: 6px; }
+  .highlight ul { margin-top: 6px; }
+
+  /* Code blocks */
+  pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px;
+    line-height: 1.7;
+    margin: 16px 0;
+  }
+  pre code { color: inherit; background: none; padding: 0; }
+  code {
+    background: #f1f5f9;
+    color: #db2777;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+  }
+
+  /* Images */
+  .img-block {
+    margin: 20px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    background: #fff;
+  }
+  .img-block img {
+    width: 100%;
+    display: block;
+  }
+  .img-block .cap {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-dim);
+    background: #f9fafb;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    margin: 24px 0;
+  }
+  .flow-item {
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 14px 20px;
+    text-align: center;
+    min-width: 110px;
+    box-shadow: var(--shadow);
+  }
+  .flow-item .num {
+    display: inline-block;
+    width: 28px; height: 28px;
+    line-height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .flow-item .label {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .flow-item .sub-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--text-dimmer);
+    font-size: 20px;
+  }
+
+  /* Overview grid */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 18px 0;
+  }
+  .overview-item {
+    background: var(--accent-light);
+    border-radius: 12px;
+    padding: 16px 18px;
+    border-left: 4px solid var(--accent);
+  }
+  .overview-item .label {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.4px;
+  }
+  .overview-item .value {
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  /* Layers */
+  .layers { margin: 22px 0; }
+  .layer {
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    border-left: 5px solid;
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+  .layer.l1 { border-left-color: #f59e0b; }
+  .layer.l2 { border-left-color: var(--accent); }
+  .layer.l3 { border-left-color: var(--green); }
+  .layer .layer-title {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .layer .pill {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: var(--text-dim);
+  }
+  .layer p { font-size: 14.5px; color: var(--text-dim); }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+  tr:hover td { background: #fafafa; }
+
+  /* Two column compare */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .compare .col {
+    border-radius: 12px;
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    background: var(--card);
+  }
+  .compare .col h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .compare .col.left { border-top: 3px solid var(--purple); }
+  .compare .col.right { border-top: 3px solid var(--green); }
+  .compare .col ul { padding-left: 20px; }
+  .compare .col li { font-size: 14px; margin-bottom: 5px; }
+
+  /* Timeline */
+  .timeline { position: relative; margin: 22px 0; padding-left: 26px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 5px; top: 6px; bottom: 6px;
+    width: 2px;
+    background: var(--border);
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -26px; top: 9px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+  }
+  .timeline-item .t-time {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .timeline-item .t-title { font-size: 15px; font-weight: 600; }
+  .timeline-item .t-desc { font-size: 14px; color: var(--text-dim); }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--text-dimmer);
+    font-size: 13px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer p + p { margin-top: 6px; }
+
+  @media (max-width: 640px) {
+    .hero { padding: 40px 16px 36px; }
+    section { padding: 32px 0; }
+    .card { padding: 18px; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .compare { grid-template-columns: 1fr; }
+    .overview-grid { grid-template-columns: 1fr; }
+    pre { font-size: 12.5px; padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>🤖 Agent 的概念、原理与构建模式</h1>
+  <p>从零打造一个简化版的 Claude Code —— 大模型的能力边界、工具、ReAct 循环、系统提示词，到手写 Agent 主循环与 Plan &amp; Execute 模式</p>
+  <div class="meta">来源：B站「马克的技术工作坊」视频教程整理 · PDF 原文 16 页 · 原文作者：马克的技术工作坊</div>
+</div>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">⚡</span> 30 秒总览</h2><p>不读全文，也能知道这篇讲了什么</p></div>
+  <div class="card">
+    <div class="highlight blue"><strong>🎯 核心问题</strong>今天的大模型（GPT-4o、DeepSeek……）回答问题和逻辑推理都很强，却有一个绕不开的限制：<strong>无法感知外界环境，也无法改变外部环境</strong>。它查不到你本地的文件、写不了文件、也改不了外部环境。那么——怎么破？</div>
+    <p>解决思路只有一句话：给大模型接上「工具」。有了工具，模型就能自己查文件、自己写代码、自己跑程序，整个过程不需要人插手。把「一个大模型」和「一堆工具」组装起来，就是一个 Agent。</p>
+    <div class="overview-grid">
+      <div class="overview-item"><div class="label">Agent 是什么</div><div class="value">大模型 + 工具 + 自动运行</div></div>
+      <div class="overview-item"><div class="label">最经典的运行模式</div><div class="value">ReAct：思考 → 行动 → 观察 → 循环</div></div>
+      <div class="overview-item"><div class="label">ReAct 的奥秘</div><div class="value">系统提示词「安排剧本」，不是专门训练</div></div>
+      <div class="overview-item"><div class="label">进阶运行模式</div><div class="value">Plan &amp; Execute：先规划，再执行</div></div>
+    </div>
+    <div class="highlight green"><strong>✅ 全文主线</strong>能力边界（为什么需要 Agent）→ 定义与类型 → ReAct 循环 → 系统提示词 → 人工模拟一次 ReAct → 逐行读懂一个开源的简化版 Claude Code → 架构全景 → Plan &amp; Execute → 两种模式对比 → 学习建议。</div>
+    <div class="highlight purple"><strong>📄 原始文档</strong>本页是 PDF 原文《Agent 的概念、原理与构建模式 —— 从零打造一个简化版的 Claude Code》的二次整理笔记，原文共 16 页。<a href="original/agent-concepts-and-building-patterns.pdf" target="_blank" rel="noopener">点击查看原始文档（PDF）→</a></div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">🧠</span> 一、引言：大模型的「能力边界」</h2><p>先把问题问清楚：为什么大模型自己干不了活？</p></div>
+  <div class="card">
+    <p>在正式理解 Agent 之前，需要先想清楚一个问题：今天的大模型（如 GPT-4o、DeepSeek 等）虽然回答问题很厉害、逻辑也很强，但它们有一个绕不开的限制 —— <strong>大模型无法感知，也无法改变外部世界</strong>。</p>
+    <p>原文举了一个很直观的例子：</p>
+    <ul>
+      <li>你让 GPT-4o 帮你写一个贪吃蛇游戏，它可以给出完整的代码；</li>
+      <li>但把代码「写入到文件」这件事，仍然得你自己动手；</li>
+      <li>更常见的场景是：你本地其实已经有一份贪吃蛇代码，只是想让模型基于它改写、加点功能 —— 如果不主动把代码复制给模型，它是查不到这些文件的。</li>
+    </ul>
+    <div class="highlight orange"><strong>⚠️ 反直觉的地方</strong>「查不到已有文件」「没法自己写文件」「改不了外部环境」，这就是大模型无法感知 / 改变外界环境的典型体现。它并不是「不聪明」，而是<strong>没有和外界打交道的通道</strong>。</div>
+    <div class="img-block">
+      <img src="assets/fig-01-llm-limits.jpg" alt="大模型擅长回答问题，但无法感知或改变外界环境">
+      <div class="cap">🖼️ 图 1-1　大模型能生成代码，却无法自己读写文件、感知环境</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">🤖</span> 二、什么是 Agent（AI 智能体）</h2><p>答案很朴素：给大模型装上「工具」</p></div>
+  <div class="card">
+    <p>解决思路其实很简单：<strong>给大模型接上「工具（Tool）」</strong>。视频里给出的工具清单是三个最基本的：</p>
+    <ul>
+      <li>读写文件内容的工具；</li>
+      <li>查看文件列表的工具；</li>
+      <li>运行终端命令的工具。</li>
+    </ul>
+    <p>工具就像是大模型的「感官和四肢」。有了工具，大模型就能自己查询已有文件、自己写入代码、自己运行程序，整个过程不需要人插手，<strong>完全自动化</strong>。</p>
+    <div class="highlight blue"><strong>📌 定义</strong>把「一个大模型」和「一堆工具」组装起来，变成一个能感知和改变外界环境的智能程序 —— 这就是 <strong>Agent（智能体）</strong>。</div>
+    <p>视频里有一个很形象的对比：大模型常被画成一个「大脑」图标，而 Agent 则被画成一个「机器人」图标。因为 Agent 有了感官和四肢，能自己独立做事，就像一个机器人。</p>
+    <div class="img-block">
+      <img src="assets/fig-02-brain-vs-tools.jpg" alt="大模型（大脑）通过使用工具变成 Agent（机器人）">
+      <div class="cap">🖼️ 图 2-1　大脑（大模型）vs 机器人（Agent）：工具是 Agent 的感官与四肢</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">🧰</span> 三、Agent 的常见类型</h2><p>形态各不相同，底层思想却完全一致</p></div>
+  <div class="card">
+    <p>Agent 不止一种，擅长的领域也不相同。原文里重点提了三类：</p>
+    <ul>
+      <li><strong>编程类 Agent</strong>：比如 Cursor，以及接下来要动手实现的简化版 Claude Code —— 提交任务后它会调用大模型和工具自动写代码；</li>
+      <li><strong>做 PPT 的 Agent</strong>：自动生成演示文稿；</li>
+      <li><strong>深度搜索 Agent</strong>：比如曾经很火的 Manus，让用户提「比较几款手机的拍照 / 性能」，它会生成执行计划、搜索浏览网页、最后把报告整理成页面。</li>
+    </ul>
+    <div class="highlight green"><strong>✅ 一致的内核</strong>Agent 的类型有很多，擅长的领域也各不相同，但其底层思想是一致的：<strong>大模型 + 工具 + 自动运行</strong>。</div>
+    <div class="img-block">
+      <img src="assets/fig-03-agent-types.jpg" alt="Manus 深度搜索 Agent 的执行界面">
+      <div class="cap">🖼️ 图 3-1　Agent 类型举例：从 Cursor 到 Manus 等</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">🔁</span> 四、Agent 的核心运行模式：ReAct</h2><p>四个词：Thought / Action / Observation / Final Answer</p></div>
+  <div class="card">
+    <p>Agent 的运行模式有多种，目前最著名、使用最广泛的是 <strong>ReAct</strong>（读作「瑞·阿克特」）。</p>
+    <div class="highlight blue"><strong>📌 ReAct 是什么</strong>ReAct 是 <strong>Reasoning + Acting</strong> 的缩写，即「思考与行动」。它最早由 2022 年 10 月的一篇论文提出，虽然已过去近 3 年，但至今仍是使用最广的 Agent 运行模式 —— 学习 Agent 实现原理，绝对绕不开它。</div>
+    <p>ReAct 的核心流程是一个循环：</p>
+    <div class="flow">
+      <div class="flow-item"><div class="num">1</div><div class="label">Thought 思考</div><div class="sub-label">判断是否调工具</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item"><div class="num">2</div><div class="label">Action 行动</div><div class="sub-label">调用工具干活</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item"><div class="num">3</div><div class="label">Observation 观察</div><div class="sub-label">查看执行结果</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item"><div class="num">4</div><div class="label">Final Answer</div><div class="sub-label">信息够就作答</div></div>
+    </div>
+    <ul>
+      <li><strong>Thought（思考）</strong>：Agent 先思考，判断是否需要调用工具；</li>
+      <li><strong>Action（行动）</strong>：如果需要，就调用合适的工具，如读取 / 写入文件；</li>
+      <li><strong>Observation（观察）</strong>：查看工具的执行结果；</li>
+      <li><strong>循环</strong>：观察之后继续思考，再判断是否需要调用工具，重复「思考 → 行动 → 观察」；</li>
+      <li><strong>Final Answer（最终答案）</strong>：当 Agent 认为信息足够、无需再调用工具时，直接给出最终结论。</li>
+    </ul>
+    <div class="highlight orange"><strong>⚠️ 记住这四个词</strong>Thought / Action / Observation / Final Answer —— 后面的代码实现里会反复用到。</div>
+    <div class="img-block">
+      <img src="assets/fig-04-react-loop.jpg" alt="ReAct 模式流程图：提交任务→思考→需要调用工具?→行动→观察">
+      <div class="cap">🖼️ 图 4-1　ReAct 运行模式流程图：思考 → 行动 → 观察 →（循环）→ 最终答案</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">📜</span> 五、ReAct 的奥秘：系统提示词（System Prompt）</h2><p>模型不是被专门训练成这样的，剧本写在提示词里</p></div>
+  <div class="card">
+    <p>一个关键问题：为什么模型拿到用户问题后，会「先思考再行动」，而不是直接行动？是因为模型被专门训练成这样吗？</p>
+    <div class="highlight red"><strong>❌ 并不是</strong>奥秘几乎全部集中在「系统提示词」上。</div>
+    <p>系统提示词是和用户问题一起送给模型的提示词，它规定了模型的角色、运行时需要遵守的规则、以及各种环境信息。只要你在系统提示词里写「你的回答必须包含两个 XML 标签：question 存放用户问题、answer 存放你的回答」，模型就会照此规范输出。要让模型按 ReAct 模式运行，系统提示词会更复杂，大致包含五个部分：</p>
+    <table>
+      <tr><th>组成部分</th><th>作用</th><th>典型内容</th></tr>
+      <tr><td><strong>① 职责描述</strong></td><td>告诉模型怎么做事</td><td>把任务分解为多步，每步先用 Thought 思考，再用 Action 调用工具，结果通过 Observation 返回，直到能给出 Final Answer</td></tr>
+      <tr><td><strong>② 示例</strong></td><td>给出完整的示范轨迹</td><td>如「埃菲尔铁塔多高」→ Thought → Action 调 get_height → Observation → Final Answer</td></tr>
+      <tr><td><strong>③ 可用工具</strong></td><td>列出能调用的工具清单</td><td>读取文件、写入文件、运行终端命令等</td></tr>
+      <tr><td><strong>④ 注意事项</strong></td><td>对危险操作给出约束</td><td>运行终端命令等危险动作需要先确认</td></tr>
+      <tr><td><strong>⑤ 环境信息</strong></td><td>交代当前所处的现场</td><td>当前操作系统、工作目录、目录下的文件列表等</td></tr>
+    </table>
+    <div class="highlight purple"><strong>💡 一句话理解</strong>这段系统提示词，相当于给模型安排了一个「迷你剧本」，它会严格按剧本一步步走完。</div>
+    <div class="img-block">
+      <img src="assets/fig-05-system-prompt.jpg" alt="ReAct 系统提示词截图：职责描述与示例">
+      <div class="cap">🖼️ 图 5-1　系统提示词的五个组成部分：职责描述 / 示例 / 可用工具 / 注意事项 / 环境信息</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">🧪</span> 六、实战：用 DeepSeek 模拟一次 ReAct</h2><p>先人工扮演「工具」，把循环跑通一遍</p></div>
+  <div class="card">
+    <p>原文用 DeepSeek 现场演示了一遍 ReAct 流程。注：DeepSeek 没有提供单独提交系统提示词的入口，所以把系统提示词和用户任务合在一起作为一条消息提交，多数情况下模型依然能按预期运行。</p>
+    <div class="highlight blue"><strong>🎯 任务</strong>写一个贪吃蛇游戏，用 HTML/CSS/JS 实现，分别放在不同文件中。提交后可以看到：</div>
+    <ul>
+      <li><strong>第一轮</strong>：模型先在 <code>&lt;thought&gt;</code> 中思考，再用 <code>&lt;action&gt;</code> 请求调用 <code>write_to_file</code> 写入 index.html，我们回复 <code>&lt;observation&gt;</code>「写入成功」；</li>
+      <li><strong>第二轮</strong>：模型再次 Thought → Action 请求写入 CSS 文件，仍回复「写入成功」；</li>
+      <li><strong>第三轮</strong>：模型 Thought → Action 写入 JS 文件；</li>
+      <li><strong>收尾</strong>：三个文件都写完后，模型返回 Thought + Final Answer，流程结束。</li>
+    </ul>
+    <div class="highlight red"><strong>❗ 这里有个非常关键的区别要记住</strong>大模型本身「不能」调用工具，它只能「请求」调用工具（注意是<strong>请求</strong>二字）。真正去执行 <code>write_to_file</code> 函数的是 Agent 的「工具调用组件」。刚才是我们用人工回复 observation 来模拟，而真正运行 Agent 时，工具调用组件会自动执行并把结果塞回给模型。</div>
+    <div class="compare">
+      <div class="col left">
+        <h4>🧠 大模型</h4>
+        <ul>
+          <li>负责思考、决策</li>
+          <li>输出 <code>&lt;thought&gt;</code> 与 <code>&lt;action&gt;</code></li>
+          <li>只能<strong>请求</strong>调用工具，自己碰不到文件系统</li>
+        </ul>
+      </div>
+      <div class="col right">
+        <h4>🦾 工具调用组件</h4>
+        <ul>
+          <li>负责真正干活</li>
+          <li>解析 <code>&lt;action&gt;</code>，执行对应函数</li>
+          <li>把执行结果作为 <code>&lt;observation&gt;</code> 回填给模型</li>
+        </ul>
+      </div>
+    </div>
+    <div class="img-block">
+      <img src="assets/fig-06-deepseek-react.jpg" alt="DeepSeek 对话中 think/action/observation 的往返">
+      <div class="cap">🖼️ 图 6-1　用 DeepSeek 模拟 ReAct：模型按 Thought → Action → Observation 节奏推进</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">🛠️</span> 七、动手实现：一个简化版 Claude Code（ReAct Agent）</h2><p>在「系统提示词 + 配套代码」的基础上，搭一个真正可用的 ReAct Agent</p></div>
+  <div class="card">
+    <p>在「系统提示词 + 配套代码」的基础上，就能搭出一个真正可用的 ReAct Agent。原文作者已经把它开源到 GitHub 上，并现场演示了逐行讲解代码。</p>
+    <h3 class="sub">7.1 运行效果演示</h3>
+    <p>进入项目目录后，用命令启动 Agent：</p>
+    <pre><code>uv run agent.py snake</code></pre>
+    <p>其中 <code>snake</code> 是脚本的第一个参数，告诉 agent.py 要操作的项目目录就是 snake 文件夹（里面原本是空的）。启动后输入任务「写一个贪吃蛇游戏，用 HTML/CSS/JS 实现，代码分别放在不同文件中」，Agent 便开始运行。</p>
+    <p>运行结果同样是 Thought / Action / Observation 三段式，写入 index.html → css → js，最后给出 Final Answer。注意这次的「写入成功」是<strong>真实执行了 write_to_file 工具，不是模拟</strong>。打开 index.html，贪吃蛇能跑、能吃到方块、左上角有分数 —— 完全可以作为简化版 Claude Code 使用。</p>
+    <div class="img-block">
+      <img src="assets/fig-07-run-demo.jpg" alt="运行 uv run agent.py snake 的输出画面">
+      <div class="cap">🖼️ 图 7-1　运行 uv run agent.py snake 的真实输出：Thought/Action/Observation 循环</div>
+    </div>
+    <div class="img-block">
+      <img src="assets/fig-08-project-tree.jpg" alt="终端中 tree 命令列出的项目文件结构">
+      <div class="cap">🖼️ 图 7-2　Agent 生成的项目结构，可直接在浏览器运行</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3 class="sub">7.2 核心代码：入口 main()</h3>
+    <p>项目里真正需要关注两个东西：agent.py（Agent 逻辑）和 snake 文件夹（产物）。入口代码大致做了这些事：</p>
+    <ul>
+      <li><code>project_directory</code>：传给脚本的第一个参数（snake 文件夹）；</li>
+      <li><code>tools</code>：可用工具列表，给出三个 —— 读取文件、写入文件、运行终端命令；</li>
+      <li>实例化 <code>ReActAgent</code>，传入 tools、模型（GPT-4o）、项目目录；</li>
+      <li>提示用户输入任务，调用 <code>agent.run(任务)</code> 启动 Agent。</li>
+    </ul>
+    <div class="img-block">
+      <img src="assets/fig-09-tool-functions.jpg" alt="read_file / write_to_file / run_terminal_command 与 main 入口代码">
+      <div class="cap">🖼️ 图 7-3　入口函数：构造工具列表 → 实例化 ReActAgent → run(任务)</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3 class="sub">7.3 核心类：ReActAgent</h3>
+    <p><code>ReActAgent</code> 类构造时接收三个参数：<strong>工具列表、要用的模型、项目目录</strong>。它还有一个 agent 主程序里负责串联流程的逻辑 —— 也就是下面要讲的 run 函数。</p>
+    <div class="img-block">
+      <img src="assets/fig-10-reactagent-class.jpg" alt="ReActAgent 类的构造函数代码">
+      <div class="cap">🖼️ 图 7-4　ReActAgent 类：构造工具 / 模型 / 目录 / 客户端</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3 class="sub">7.4 核心逻辑：run() 的 while 循环</h3>
+    <p><code>run(任务)</code> 是 ReActAgent 的核心调用，大致做了这些事：</p>
+    <ol>
+      <li>构建 message 列表：含系统提示词（由 <code>render_system_prompt</code> 渲染，填入工具列表、操作系统、文件列表等占位符）和用户问题；</li>
+      <li>调用 <code>call_model</code> 拿到模型结果，提取 <code>&lt;thought&gt;</code> 打印；</li>
+      <li>检测 <code>&lt;thought&gt;</code> 之后是否是 Final Answer：是则结束；否则一定包含 <code>&lt;action&gt;</code>，解析出函数名与参数；</li>
+      <li>若是运行终端命令的工具，会先询问用户是否继续（因为危险）；</li>
+      <li>执行工具背后的函数，把结果放进 <code>&lt;observation&gt;</code>，再加入 message 列表；</li>
+      <li>回到循环开头，带新结果再次请求模型。</li>
+    </ol>
+    <div class="highlight blue"><strong>📌 一句话总结这个 while 循环</strong>请求模型 → 提取 thought → 检测 final answer → 提取并执行 action → 循环，直到模型返回 Final Answer。回想一下，这正是前面讲的 ReAct 流程。</div>
+    <pre><code>while True:
+    messages = [系统提示词(工具/环境), 用户任务, ...历史消息]
+    content  = call_model(messages)          # ① 请求模型
+    thought  = 提取 &lt;thought&gt;                # ② 打印思考
+    if Final Answer in content: 结束          # ③ 判断是否收尾
+    action   = 解析 &lt;action&gt; 的函数名与参数    # ④ 解析动作
+    if action 是终端命令: 先询问用户确认        # ⑤ 危险操作拦截
+    observation = 执行工具函数(action)         # ⑥ 真正干活
+    messages.append(&lt;observation&gt;...)          # ⑦ 回填结果，进入下一轮</code></pre>
+    <div class="highlight orange"><strong>⚠️ 说明</strong>上面的代码块是按原文 7.4 的文字描述整理的<strong>流程骨架（示意）</strong>，用于对照理解，并非逐字誊录的源码；逐字实现请看图 7-5。</div>
+    <div class="img-block">
+      <img src="assets/fig-11-run-loop.jpg" alt="run() 主循环源码：call_model、thought 匹配、action 匹配">
+      <div class="cap">🖼️ 图 7-5　run() 主循环：call_model → 解析 thought/action → 执行工具 → 回填 observation</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">🗺️</span> 八、Agent 架构全景图</h2><p>用户、主程序、模型、工具，四个角色的分工与对话</p></div>
+  <div class="card">
+    <p>为了彻底看清整个过程发生了什么，原文画了一张流程图。流程里有两类角色：<strong>用户</strong> 和 <strong>Agent</strong>；而 Agent 又可分为三部分：</p>
+    <div class="layers">
+      <div class="layer l1">
+        <div class="layer-title">🧠 模型 <span class="pill">大脑</span></div>
+        <p>负责思考与决定 Action。</p>
+      </div>
+      <div class="layer l2">
+        <div class="layer-title">🦾 工具 <span class="pill">四肢</span></div>
+        <p>函数，真正干活的四肢 —— 读写文件、查看文件列表、运行终端命令。</p>
+      </div>
+      <div class="layer l3">
+        <div class="layer-title">🔗 Agent 主程序 <span class="pill">串联</span></div>
+        <p>负责串联整个流程的代码逻辑，可以理解成前面代码里的 run 函数。</p>
+      </div>
+    </div>
+    <p>它们的沟通方式是：</p>
+    <ol>
+      <li>用户提交任务 → 任务先到 Agent 主程序；</li>
+      <li>主程序调用模型 → 模型返回 Thought 和 Action；</li>
+      <li>主程序把 Thought/Action 展示给用户，然后去调用 Action 指定的工具；</li>
+      <li>工具执行完返回结果 → 主程序把结果展示给用户，并加入历史消息列表；</li>
+      <li>再次请求模型，重复「思考 → 行动 → 观察」，直至模型返回 Thought + Final Answer，流程结束。</li>
+    </ol>
+    <div class="img-block">
+      <img src="assets/fig-12-main-function.jpg" alt="main() 中构造工具、实例化 Agent、读取用户任务并 run">
+      <div class="cap">🖼️ 图 8-1　Agent 架构全景：用户 / 主程序 / 模型 / 工具 四方协作</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">🧭</span> 九、另一种运行模式：Plan &amp; Execute（先规划，再执行）</h2><p>ReAct 最常用、最广，但它不是唯一方案</p></div>
+  <div class="card">
+    <p>ReAct 最常见、使用最广，但它不是唯一方案。很多 Agent 的运行方式是「<strong>先规划，再执行</strong>」：</p>
+    <ul>
+      <li>Manus 一开始就构建一个待办列表，后续按列表执行；</li>
+      <li>Claude Code 里也常看到先创建 to-do、再去执行的情况。</li>
+    </ul>
+    <p>这种「先规划再执行」目前没有统一名字，各实现也略有差异。原文重点讲了其中一个有名的实践 —— LangChain 提出的 <strong>Plan &amp; Execute</strong> 模式。</p>
+    <h3 class="sub">9.1 模式结构</h3>
+    <p>从总体看它也遵循「先规划再执行」，但引入了「动态调整规划」的环节，灵活性更强。其内部模块有：</p>
+    <div class="overview-grid">
+      <div class="overview-item"><div class="label">Plan 模型</div><div class="value">负责生成执行计划</div></div>
+      <div class="overview-item"><div class="label">Replan 模型</div><div class="value">根据每步执行结果动态调整计划</div></div>
+      <div class="overview-item"><div class="label">执行 Agent</div><div class="value">负责执行计划中的每一步</div></div>
+      <div class="overview-item"><div class="label">Agent 主程序</div><div class="value">负责串联整个流程</div></div>
+    </div>
+    <p>其中 plan / replan 可以是同一个模型，也可以分开；执行 Agent 内部仍可用 ReAct 模式运行，并内置如网络搜索等工具。</p>
+    <div class="highlight purple"><strong>💡 注意</strong>Plan &amp; Execute Agent 内部还套着一个 Agent（执行 Agent），这种「<strong>Agent 套 Agent</strong>」的设计在实践中很常见。</div>
+    <div class="img-block">
+      <img src="assets/fig-13-plan-execute-code.jpg" alt="Plan & Execute 相关源码片段">
+      <div class="cap">🖼️ 图 9-1　Plan &amp; Execute 思路：先规划，再执行（以 Claude Code 的 to-do 为例）</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3 class="sub">9.2 角色与时序</h3>
+    <p>以「今年澳网男子冠军的家乡是哪里」为例，主程序把问题发给 Plan 模型，得到执行步骤（查询当前日期 → 查询该年澳网男单冠军名字 → 据名字查家乡）。随后主程序把计划交给执行 Agent 执行第一步，执行完后把「<strong>用户问题 + 计划 + 执行记录</strong>」发给 Replan 模型，生成下一轮计划。</p>
+    <div class="img-block">
+      <img src="assets/fig-14-replan-loop.jpg" alt="Plan & Execute 主循环代码：content = call_model(messages)">
+      <div class="cap">🖼️ 图 9-2　Plan &amp; Execute 模块：Plan 模型 / Replan 模型 / 执行 Agent / 主程序</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3 class="sub">9.3 三轮循环模拟</h3>
+    <p>整个循环一般运行多轮，以这题为例运行三轮，对应计划中的三步。每一轮含「执行环节 + Replan 环节」：</p>
+    <ol>
+      <li><strong>第一轮</strong>：执行「查询当前日期」→ Replan 模型更新计划（已查日期，第二步精确到「2025 年澳网男单冠军」）；</li>
+      <li><strong>第二轮</strong>：执行「查冠军名字」（Jannik Sinner）→ Replan 再次更新；</li>
+      <li><strong>第三轮</strong>：执行「查家乡」→ 此时所有步骤完成，Replan 模型发现任务已可作答，便不再返回新计划，而是直接返回「最终答案」。</li>
+    </ol>
+    <div class="highlight green"><strong>✅ 更准确的说法</strong>主程序请求 Replan 模型，返回的是「新的执行计划」或「最终答案」二选一 —— <strong>有步骤要做就给计划，没步骤要做就给答案</strong>。</div>
+    <div class="img-block">
+      <img src="assets/fig-15-plan-sequence.jpg" alt="主程序 / Plan 模型 / RePlan 模型 / 执行 Agent 的时序图">
+      <div class="cap">🖼️ 图 9-3　三轮循环：执行 → Replan，直到所有步骤完成返回最终答案</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">⚖️</span> 十、两种模式对比</h2><p>把 ReAct 与 Plan &amp; Execute 放在一起看，更容易理解各自的取舍</p></div>
+  <div class="card">
+    <table>
+      <tr><th>对比维度</th><th>ReAct</th><th>Plan &amp; Execute</th></tr>
+      <tr><td><strong>核心思路</strong></td><td>边思考边行动，循环推进</td><td>先整体规划，再分步执行并可动态调整</td></tr>
+      <tr><td><strong>提出/代表</strong></td><td>2022.10 论文；最广泛使用</td><td>LangChain 实践方案</td></tr>
+      <tr><td><strong>规划方式</strong></td><td>隐式，在 Thought 中逐步决定</td><td>显式，由 Plan/Replan 模型维护计划</td></tr>
+      <tr><td><strong>适用场景</strong></td><td>步骤不固定、需边做边看的任务</td><td>目标清晰、可预先拆解的复杂任务</td></tr>
+      <tr><td><strong>灵活性</strong></td><td>灵活但易走弯路</td><td>计划清晰，且能按结果动态修正</td></tr>
+      <tr><td><strong>典型产品</strong></td><td>Cursor、简化版 Claude Code</td><td>Manus、Claude Code（to-do 模式）</td></tr>
+    </table>
+    <div class="highlight blue"><strong>📌 怎么选</strong>任务步骤说不清、需要边做边看 → 用 ReAct；目标清晰、能提前拆成待办 → 用 Plan &amp; Execute，并且保留 Replan 环节按结果动态修正。</div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">🎓</span> 十一、总结与学习建议</h2><p>回到开头的两个问题，现在应该很清楚了</p></div>
+  <div class="card">
+    <div class="highlight blue"><strong>🎯 是什么</strong>把「大模型」和「工具」组装起来，能感知并改变外界环境的智能程序。</div>
+    <div class="highlight green"><strong>🔁 怎么运行</strong>靠运行模式驱动，最经典的是 ReAct（思考 → 行动 → 观察 → 循环 → 最终答案），靠系统提示词「安排剧本」，靠 Agent 主程序串联模型与工具；进阶做法是 Plan &amp; Execute（先规划再执行、动态修正）。</div>
+    <p>原文作者也给出一条务实的学习路径：</p>
+    <ol>
+      <li>先把 ReAct 的论文流程和四要素（Thought / Action / Observation / Final Answer）记牢；</li>
+      <li>动手跑一遍开源的简化版 Agent，逐行读 <code>main()</code>、<code>ReActAgent</code>、<code>run()</code> 循环；</li>
+      <li>理解了 ReAct 之后，再看 Plan &amp; Execute 等其它模式会更轻松；</li>
+      <li>刻意区分「<strong>模型请求工具</strong>」与「<strong>工具调用组件真正执行工具</strong>」—— 这是很多初学者最容易混淆的点。</li>
+    </ol>
+    <div class="img-block">
+      <img src="assets/fig-16-final-answer.jpg" alt="第三个执行计划与最终答案的示意画面">
+      <div class="cap">🖼️ 图 11-1　课程收尾：从概念到动手实现一个 Agent</div>
+    </div>
+    <div class="highlight purple"><strong>🧭 至此</strong>你已经打通了从「大模型能力边界」到「自己写出一个简化版 Claude Code」的完整链路。</div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">📋</span> 一页速查</h2><p>可以独立使用的问题 → 结论对照表</p></div>
+  <div class="card">
+    <table>
+      <tr><th>问题</th><th>结论</th></tr>
+      <tr><td>大模型最大的限制是什么？</td><td>无法感知外界环境，也无法改变外部环境 —— 查不到文件、写不了文件</td></tr>
+      <tr><td>Agent 到底是什么？</td><td>大模型 + 一堆工具 + 自动运行，组装成能感知并改变外界环境的智能程序</td></tr>
+      <tr><td>为什么工具这么关键？</td><td>工具是 Agent 的感官与四肢：读写文件、查看文件列表、运行终端命令</td></tr>
+      <tr><td>不同 Agent（编程 / PPT / 深度搜索）差别在哪？</td><td>形态与领域不同，底层思想一致：大模型 + 工具 + 自动运行</td></tr>
+      <tr><td>ReAct 是什么缩写？</td><td>Reasoning + Acting，思考与行动；2022 年 10 月论文提出，至今最广泛使用</td></tr>
+      <tr><td>ReAct 的四要素是什么？</td><td>Thought（思考）→ Action（行动）→ Observation（观察）→ Final Answer（最终答案）</td></tr>
+      <tr><td>模型为什么会「先思考再行动」？</td><td>几乎全部靠系统提示词，不是被专门训练出来的</td></tr>
+      <tr><td>ReAct 的系统提示词包含哪五部分？</td><td>职责描述 / 示例 / 可用工具 / 注意事项 / 环境信息</td></tr>
+      <tr><td>工具到底是谁执行的？</td><td>大模型只能「请求」调用工具，真正执行的是 Agent 的工具调用组件</td></tr>
+      <tr><td>run() 的 while 循环在干什么？</td><td>请求模型 → 提取 thought → 检测 final answer → 解析并执行 action → 回填 observation → 循环</td></tr>
+      <tr><td>Agent 的三个组成部分？</td><td>模型（大脑）+ 工具（四肢）+ Agent 主程序（串联流程）</td></tr>
+      <tr><td>Plan &amp; Execute 里谁负责改计划？</td><td>Replan 模型：返回「新的执行计划」或「最终答案」二选一</td></tr>
+      <tr><td>ReAct 和 Plan &amp; Execute 怎么选？</td><td>步骤不固定、边做边看选 ReAct；目标清晰、可预先拆解选 Plan &amp; Execute</td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">📖</span> 术语表</h2><p>文中出现的关键概念</p></div>
+  <div class="card">
+    <table>
+      <tr><th>术语</th><th>解释</th></tr>
+      <tr><td><strong>Agent（智能体）</strong></td><td>把大模型与一堆工具组装起来、能感知并改变外界环境的智能程序</td></tr>
+      <tr><td><strong>工具（Tool）</strong></td><td>Agent 的「感官与四肢」，本质是可被调用的函数，如读写文件、查看文件列表、运行终端命令</td></tr>
+      <tr><td><strong>ReAct</strong></td><td>Reasoning + Acting，最经典的 Agent 运行模式，以「思考 → 行动 → 观察」循环推进</td></tr>
+      <tr><td><strong>Thought</strong></td><td>思考环节：模型判断是否需要调用工具、下一步该做什么</td></tr>
+      <tr><td><strong>Action</strong></td><td>行动环节：模型输出要调用的工具名与参数（只是「请求」）</td></tr>
+      <tr><td><strong>Observation</strong></td><td>观察环节：工具执行结果被回填给模型，作为下一轮思考的输入</td></tr>
+      <tr><td><strong>Final Answer</strong></td><td>最终答案：模型认为信息足够、无需再调用工具时给出的结论</td></tr>
+      <tr><td><strong>系统提示词（System Prompt）</strong></td><td>与用户问题一起送给模型的提示词，规定角色、运行时规则与环境信息，相当于「迷你剧本」</td></tr>
+      <tr><td><strong>工具调用组件</strong></td><td>Agent 中真正执行工具函数、并把结果作为 Observation 回填的部件</td></tr>
+      <tr><td><strong>ReActAgent</strong></td><td>简化版 Claude Code 里的核心类，构造时接收工具列表、模型、项目目录</td></tr>
+      <tr><td><strong>run() 主循环</strong></td><td>ReActAgent 的核心方法：请求模型 → 解析 thought/action → 执行工具 → 回填 → 循环，直到 Final Answer</td></tr>
+      <tr><td><strong>Plan &amp; Execute</strong></td><td>先规划再执行的运行模式，LangChain 提出的实践方案，含动态调整规划环节</td></tr>
+      <tr><td><strong>Plan 模型</strong></td><td>负责生成执行计划的模型</td></tr>
+      <tr><td><strong>Replan 模型</strong></td><td>根据每步执行结果动态调整计划的模型，返回「新计划」或「最终答案」</td></tr>
+      <tr><td><strong>执行 Agent</strong></td><td>负责执行计划中每一步的 Agent，内部仍可用 ReAct 模式，构成「Agent 套 Agent」</td></tr>
+      <tr><td><strong>LangChain</strong></td><td>提出 Plan &amp; Execute 模式的开源框架</td></tr>
+      <tr><td><strong>Manus</strong></td><td>深度搜索类 Agent，一开始构建待办列表、再按列表执行</td></tr>
+      <tr><td><strong>Claude Code / Cursor</strong></td><td>典型编程类 Agent；本页笔记的简化版实现即对标 Claude Code</td></tr>
+      <tr><td><strong>uv</strong></td><td>Python 包与运行环境管理工具，原文用 <code>uv run agent.py snake</code> 启动 Agent</td></tr>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <p>📄 本笔记根据 PDF 文章整理 · 配图取自原文</p>
+  <p>原始文档：<a href="original/agent-concepts-and-building-patterns.pdf" target="_blank" rel="noopener">《Agent 的概念、原理与构建模式 —— 从零打造一个简化版的 Claude Code》（PDF · 16 页）</a></p>
+  <p>原文整理自 B站：<strong>马克的技术工作坊</strong>（B站 UID：1815948385）</p>
+  <p>内容版权归原作者所有，本页仅作学习笔记与二次整理</p>
+  <div class="series-nav">
+    <div class="label">🔗 相关主题</div>
+    <div class="links">
+      <a href="../agent-skill/">一文讲透 Agent Skill</a>
+      <a href="../context-engineering/">Context Engineering 深度解析</a>
+      <a href="../harness-engineering/">Harness Engineering 到底是什么？</a>
+      <a href="../ai-coding-workflow/">AI 编程全流程</a>
+    </div>
+  </div>
+  <p><a href="../">← 返回知识库首页</a></p>
+</footer>
+
+</body>
+</html>
