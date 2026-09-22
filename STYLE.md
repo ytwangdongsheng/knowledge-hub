@@ -13,12 +13,12 @@
 
 | 主题 | 模板 | 漂移情况 |
 |------|------|----------|
-| `rag/` | **A** | 最早的一篇，自有命名体系（`.container` / `.header` / `.section`） |
+| `rag/` | **A → B v3** | 最早的一篇，自有命名体系；2026-09-22 已迁移完成 |
 | `ai-coding-workflow/` | **B v1** | 换了一套命名体系（`.wrap` / `.hero` / `.card`） |
 | `agent-skill/` | **B v2** | 追加 `.compare`、`.layers` |
 | `token-embedding/` | **B v3** | 追加 `.timeline`、`.overview-grid` |
 
-**Template B v3 是本规范的基准。** `rag/` 属于历史遗留的 Template A，尚未迁移（见 §7）。
+**Template B v3 是本规范的基准，四个主题现已全部统一。** 详见 §7。
 
 从本文件开始，格式不再依赖「复制上一份制品」。
 
@@ -517,20 +517,39 @@ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
 
 ---
 
-## 7. 已知偏差
+## 7. 模板统一状态
 
-`rag/index.html` 使用的是更早的 **Template A**，与本规范不一致：
+**四个主题已全部统一到 Template B v3**，不再存在偏差：
 
-| | Template A（`rag/`） | Template B v3（基准） |
+| 主题 | 状态 |
+|------|------|
+| `rag/` | ✅ 2026-09-22 从 Template A 迁移完成 |
+| `ai-coding-workflow/` | ✅ B v1 起即符合 |
+| `agent-skill/` | ✅ B v2 |
+| `token-embedding/` | ✅ B v3（参考实装） |
+
+迁移方式：把 `token-embedding/index.html` 的 `<style>` 块**原样注入**（保证与规范逐字节一致），正文按下面的映射改写。
+
+<details>
+<summary>Template A → B 的历史映射（仅供理解旧版本，现行不再使用）</summary>
+
+| | Template A（旧 `rag/`） | Template B v3（现行基准） |
 |---|---|---|
 | 容器 | `.container`（max 960px） | `.wrap`（max 820px） |
 | 横幅 | `.header`，圆角底部 | `.hero`，通栏 |
 | 章节 | `.section` 独立卡片 | `.wrap` + `section` 边框分隔 |
 | 底色 / 主色 | `#f5f0e8` / `#2b6cb0` | `#fafaf7` / `#2563eb` |
 | Hero 渐变 | `#2b6cb0 → #4c51bf` | `#1e3a5f → #2563eb` |
-| 知识点卡 | `.knowledge-card` | `.card` + `.highlight` |
+| 知识点卡 | `.knowledge-card` | `.card` + `.img-block` |
+| 流程步骤 | `.flow-step`（绿/橙分类） | `.flow-item`（`.num` + `.sub-label`） |
+| 要点框 | `.key-point` | `.highlight.{blue,green,orange,red,purple}` |
+| 表格 | `.comparison-table` | `table` |
+| 时间线 | `.time` / `.content` | `.t-time` / `.t-title` / `.t-desc` |
+| 清单 | `.action-list` | 普通 `ul` / `ol` |
 
-**暂不迁移**：`rag/` 内容与配图完整、线上正常，迁移属于纯视觉重构，收益低于风险。新增主题一律按 Template B v3。
+</details>
+
+新增主题一律按 Template B v3。
 
 ---
 
