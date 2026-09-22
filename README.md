@@ -14,6 +14,7 @@
 | **AI 编程全流程** | 如何用 AI 稳定交付高质量产品：5 步工作流 + 3 个原则 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/ai-coding-workflow/) |
 | **一文讲透 Agent Skill** | 定义、目录结构、原理与实战思路：渐进式披露机制 + 与 MCP 的差异 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/agent-skill/) |
 | **Token 与 Embedding** | LLM 与 RAG 的数据处理机制：从编号到语义、Embedding 实现、对比学习 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/token-embedding/) |
+| **MCP 终极指南（基础篇）** | Model Context Protocol 核心概念、配置流程、交互机制、uvx/npx 安装 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/mcp-basics/) |
 
 > 更多主题持续补充中。
 
