@@ -220,6 +220,83 @@
   }
   footer .note { font-size: 12.5px; margin-top: 10px; opacity: .72; }
 
+  /* Tabs */
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 28px;
+    padding: 4px;
+    background: var(--bg-soft);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .tab {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    background: transparent;
+  }
+  .tab:hover {
+    color: var(--text);
+    background: rgba(59,130,246,0.08);
+  }
+  .tab.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    box-shadow: 0 4px 12px -4px var(--accent);
+  }
+  .tab .count {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    background: rgba(255,255,255,0.15);
+  }
+  .tab.active .count {
+    background: rgba(255,255,255,0.25);
+  }
+
+  /* Topic card hide/show */
+  .topic.hidden {
+    display: none;
+  }
+
+  /* Series nav in topic footer */
+  .series-nav {
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: rgba(59,130,246,0.06);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 10px;
+  }
+  .series-nav .label {
+    font-size: 12px;
+    color: var(--text-dimmer);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .series-nav .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+  .series-nav a {
+    font-size: 13.5px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .series-nav a:hover {
+    text-decoration: underline;
+  }
+
   @media (max-width: 1024px) {
     .topics { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
   }
@@ -258,8 +335,17 @@
     <p>点击卡片进入对应主题的图文笔记。</p>
   </div>
 
+  <!-- Tab 分类切换 -->
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-filter="all">全部 <span class="count">9</span></button>
+    <button class="tab" data-filter="mcp">MCP 系列 <span class="count">2</span></button>
+    <button class="tab" data-filter="rag">RAG 系列 <span class="count">2</span></button>
+    <button class="tab" data-filter="ai-eng">AI 工程 <span class="count">3</span></button>
+    <button class="tab" data-filter="fundamentals">基础概念 <span class="count">2</span></button>
+  </div>
+
   <div class="topics">
-    <a class="topic" href="rag/" style="--tone:#3b82f6">
+    <a class="topic" href="rag/" style="--tone:#3b82f6" data-category="rag">
       <div class="ico">🧠</div>
       <h3>RAG 工作机制详解</h3>
       <p class="desc">
@@ -275,7 +361,7 @@
       <div class="go">阅读笔记 →</div>
     </a>
 
-    <a class="topic" href="rag-python/" style="--tone:#14b8a6">
+    <a class="topic" href="rag-python/" style="--tone:#14b8a6" data-category="rag">
       <div class="ico">🐍</div>
       <h3>使用 Python 构建 RAG 系统</h3>
       <p class="desc">
@@ -291,7 +377,7 @@
       <div class="go">阅读笔记 →</div>
     </a>
 
-    <a class="topic" href="ai-coding-workflow/" style="--tone:#8b5cf6">
+    <a class="topic" href="ai-coding-workflow/" style="--tone:#8b5cf6" data-category="ai-eng">
       <div class="ico">🤖</div>
       <h3>AI 编程全流程</h3>
       <p class="desc">
@@ -307,7 +393,7 @@
       <div class="go">阅读笔记 →</div>
     </a>
 
-    <a class="topic" href="agent-skill/" style="--tone:#10b981">
+    <a class="topic" href="agent-skill/" style="--tone:#10b981" data-category="fundamentals">
       <div class="ico">🧩</div>
       <h3>一文讲透 Agent Skill</h3>
       <p class="desc">
@@ -323,7 +409,7 @@
       <div class="go">阅读笔记 →</div>
     </a>
 
-    <a class="topic" href="token-embedding/" style="--tone:#f59e0b">
+    <a class="topic" href="token-embedding/" style="--tone:#f59e0b" data-category="fundamentals">
       <div class="ico">🍎</div>
       <h3>15 分钟弄懂 Token 和 Embedding</h3>
       <p class="desc">
@@ -339,7 +425,7 @@
       <div class="go">阅读笔记 →</div>
     </a>
 
-    <a class="topic" href="mcp-basics/" style="--tone:#06b6d4">
+    <a class="topic" href="mcp-basics/" style="--tone:#06b6d4" data-category="mcp">
       <div class="ico">🔌</div>
       <h3>MCP 终极指南（基础篇）</h3>
       <p class="desc">
@@ -355,7 +441,7 @@
       <div class="go">阅读笔记 →</div>
     </a>
 
-    <a class="topic" href="mcp-advanced/" style="--tone:#ec4899">
+    <a class="topic" href="mcp-advanced/" style="--tone:#ec4899" data-category="mcp">
       <div class="ico">🔬</div>
       <h3>MCP 终极指南（进阶篇）</h3>
       <p class="desc">
@@ -371,7 +457,7 @@
       <div class="go">阅读笔记 →</div>
     </a>
 
-    <a class="topic" href="context-engineering/" style="--tone:#84cc16">
+    <a class="topic" href="context-engineering/" style="--tone:#84cc16" data-category="ai-eng">
       <div class="ico">🧭</div>
       <h3>Context Engineering 深度解析</h3>
       <p class="desc">
@@ -387,7 +473,7 @@
       <div class="go">阅读笔记 →</div>
     </a>
 
-    <a class="topic" href="harness-engineering/" style="--tone:#ef4444">
+    <a class="topic" href="harness-engineering/" style="--tone:#ef4444" data-category="ai-eng">
       <div class="ico">🔧</div>
       <h3>Harness Engineering 到底是什么？</h3>
       <p class="desc">
@@ -486,6 +572,33 @@
     采用 CC BY-NC-SA 4.0 许可
   </div>
 </footer>
+
+<script>
+// Tab 分类切换
+document.addEventListener('DOMContentLoaded', function() {
+  const tabs = document.querySelectorAll('.tab');
+  const topics = document.querySelectorAll('.topic[data-category]');
+  
+  tabs.forEach(tab => {
+    tab.addEventListener('click', function() {
+      const filter = this.dataset.filter;
+      
+      // 更新 active 状态
+      tabs.forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      
+      // 过滤卡片
+      topics.forEach(topic => {
+        if (filter === 'all' || topic.dataset.category === filter) {
+          topic.classList.remove('hidden');
+        } else {
+          topic.classList.add('hidden');
+        }
+      });
+    });
+  });
+});
+</script>
 
 </body>
 </html>
