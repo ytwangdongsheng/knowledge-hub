@@ -127,7 +127,7 @@
   /* Topic cards */
   .topics {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
     gap: 22px;
   }
   .topic {
@@ -220,6 +220,12 @@
   }
   footer .note { font-size: 12.5px; margin-top: 10px; opacity: .72; }
 
+  @media (max-width: 1024px) {
+    .topics { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  }
+  @media (max-width: 768px) {
+    .topics { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  }
   @media (max-width: 640px) {
     .hero { padding: 66px 20px 54px; }
     section { padding: 48px 0; }
