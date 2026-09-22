@@ -16,6 +16,7 @@
 | **Token 与 Embedding** | LLM 与 RAG 的数据处理机制：从编号到语义、Embedding 实现、对比学习 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/token-embedding/) |
 | **MCP 终极指南（基础篇）** | Model Context Protocol 核心概念、配置流程、交互机制、uvx/npx 安装 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/mcp-basics/) |
 | **MCP 终极指南（进阶篇）** | 从零构建 MCP Server、抓包分析协议、终端直接交互、协议本质 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/mcp-advanced/) |
+| **Harness Engineering 到底是什么？** | 概念演进、OpenAI/Anthropic 实战案例、争议讨论：过渡期的关键技术 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/harness-engineering/) |
 
 > 更多主题持续补充中。
 
@@ -53,6 +54,10 @@ knowledge-hub/
 │   ├── index.html       # 图文笔记正文
 │   └── assets/          # 配图
 ├── mcp-advanced/        # 主题：MCP 终极指南（进阶篇）
+│   ├── README.md        # 主题说明
+│   ├── index.html       # 图文笔记正文
+│   └── assets/          # 配图
+├── harness-engineering/ # 主题：Harness Engineering 到底是什么？
 │   ├── README.md        # 主题说明
 │   ├── index.html       # 图文笔记正文
 │   └── assets/          # 配图
