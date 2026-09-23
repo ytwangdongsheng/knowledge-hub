@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 4 讲 · 马尔可夫模型与语音识别：第一个能训练、能推理的生成器 — 破解 Transformer 系列</title>
+<meta name="description" content="破解 Transformer 系列第 4 讲：马尔可夫模型（Markov Model）的 Markov 假设、三要素（状态空间/初始分布/状态转移矩阵）、训练（极大似然估计）、评分、搜索（动态规划），以及语音识别问题如何用贝叶斯公式重构成语言模型 + 声学模型。">
+<style>
+  :root {
+    --bg: #fafaf7;
+    --card: #ffffff;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --orange: #d97706;
+    --orange-light: #fef3c7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --purple: #7c3aed;
+    --purple-light: #ede9fe;
+    --text: #1f2937;
+    --text-dim: #6b7280;
+    --text-dimmer: #9ca3af;
+    --border: #e5e7eb;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+    color: white;
+    padding: 60px 24px 50px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: clamp(26px, 4.6vw, 40px);
+    font-weight: 800;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+  .hero p {
+    font-size: clamp(15px, 2.5vw, 18px);
+    opacity: 0.9;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .hero .meta {
+    margin-top: 20px;
+    font-size: 14px;
+    opacity: 0.75;
+  }
+
+  /* Layout */
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
+  section { padding: 48px 0; }
+  section + section { border-top: 1px solid var(--border); }
+
+  /* Section headers */
+  .sec-head { margin-bottom: 28px; }
+  .sec-head h2 {
+    font-size: clamp(22px, 4vw, 28px);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .sec-head h2 .emoji { font-size: 1.2em; }
+  .sec-head p { color: var(--text-dim); font-size: 15px; }
+
+  /* Sub heading */
+  h3.sub {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 26px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card p, .card li { font-size: 15px; color: var(--text); }
+  .card p + p { margin-top: 10px; }
+  .card ul, .card ol { padding-left: 22px; margin-top: 10px; }
+  .card li + li { margin-top: 6px; }
+
+  /* Highlight boxes */
+  .highlight {
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin: 16px 0;
+  }
+  .highlight.blue { background: var(--accent-light); border-left: 4px solid var(--accent); }
+  .highlight.green { background: var(--green-light); border-left: 4px solid var(--green); }
+  .highlight.orange { background: var(--orange-light); border-left: 4px solid var(--orange); }
+  .highlight.red { background: var(--red-light); border-left: 4px solid var(--red); }
+  .highlight.purple { background: var(--purple-light); border-left: 4px solid var(--purple); }
+  .highlight > strong:first-child { display: block; margin-bottom: 6px; }
+  .highlight ul { margin-top: 6px; }
+
+  /* Code blocks */
+  pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px;
+    line-height: 1.7;
+    margin: 16px 0;
+  }
+  pre code { color: inherit; background: none; padding: 0; }
+  code {
+    background: #f1f5f9;
+    color: #db2777;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+  }
+
+  /* Images */
+  .img-block {
+    margin: 20px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    background: #fff;
+  }
+  .img-block img {
+    width: 100%;
+    display: block;
+  }
+  .img-block .cap {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-dim);
+    background: #f9fafb;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    margin: 24px 0;
+  }
+  .flow-item {
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 14px 20px;
+    text-align: center;
+    min-width: 110px;
+    box-shadow: var(--shadow);
+  }
+  .flow-item .num {
+    display: inline-block;
+    width: 28px; height: 28px;
+    line-height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .flow-item .label {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .flow-item .sub-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--text-dimmer);
+    font-size: 20px;
+  }
+
+  /* Overview grid */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 18px 0;
+  }
+  .overview-item {
+    background: var(--accent-light);
+    border-radius: 12px;
+    padding: 16px 18px;
+    border-left: 4px solid var(--accent);
+  }
+  .overview-item .label {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.4px;
+  }
+  .overview-item .value {
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  /* Layers */
+  .layers { margin: 22px 0; }
+  .layer {
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    border-left: 5px solid;
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+  .layer.l1 { border-left-color: #f59e0b; }
+  .layer.l2 { border-left-color: var(--accent); }
+  .layer.l3 { border-left-color: var(--green); }
+  .layer .layer-title {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .layer .pill {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: var(--text-dim);
+  }
+  .layer p { font-size: 14.5px; color: var(--text-dim); }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+  tr:hover td { background: #fafafa; }
+
+  /* Two column compare */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .compare .col {
+    border-radius: 12px;
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    background: var(--card);
+  }
+  .compare .col h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .compare .col.left { border-top: 3px solid var(--purple); }
+  .compare .col.right { border-top: 3px solid var(--green); }
+  .compare .col ul { padding-left: 20px; }
+  .compare .col li { font-size: 14px; margin-bottom: 5px; }
+
+  /* Timeline */
+  .timeline { position: relative; margin: 22px 0; padding-left: 26px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 5px; top: 6px; bottom: 6px;
+    width: 2px;
+    background: var(--border);
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -26px; top: 9px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+  }
+  .timeline-item .t-time {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .timeline-item .t-title { font-size: 15px; font-weight: 600; }
+  .timeline-item .t-desc { font-size: 14px; color: var(--text-dim); }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--text-dimmer);
+    font-size: 13px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer p + p { margin-top: 6px; }
+
+  @media (max-width: 640px) {
+    .hero { padding: 40px 16px 36px; }
+    section { padding: 32px 0; }
+    .card { padding: 18px; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .compare { grid-template-columns: 1fr; }
+    .overview-grid { grid-template-columns: 1fr; }
+    pre { font-size: 12.5px; padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>📺 第 4 讲 · 马尔可夫模型</h1>
+  <p>第一个能训练、能推理的生成器 —— 以及语音识别问题的贝叶斯重构</p>
+  <div class="meta">破解 Transformer 系列 · 来源：B站 BV1AZ17BqEv6 · 约 22 分钟 · UP主：忠厚老实的老王</div>
+</div>
+
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">⚡</span> 30 秒总览</h2>
+    <p>第一个真正能落地的生成器，以及它为什么能击败规则系统</p>
+  </div>
+  <div class="card">
+    <div class="highlight blue">
+      <strong>🎯 一句话抓住本讲</strong>
+      马尔可夫模型（Markov Model, MM）是<strong>人们掌握的第一个同时具备「可训练」「可推理」「上下文生成能力」的生成器</strong>。它的数学结构极简 —— 一个初始分布加一个状态转移矩阵就能刻画系统演化；训练靠统计频数，评分靠连乘转移概率，搜索靠动态规划。更关键的是：MM 之所以能击败规则系统，是因为<strong>生成器思想彻底重构了整个语音识别问题本身</strong>。
+    </div>
+    <div class="overview-grid">
+      <div class="overview-item">
+        <div class="label">本讲定位</div>
+        <div class="value">统计语言学的落地：第一个可用生成器</div>
+      </div>
+      <div class="overview-item">
+        <div class="label">视频时长</div>
+        <div class="value">约 22 分钟</div>
+      </div>
+      <div class="overview-item">
+        <div class="label">核心假设</div>
+        <div class="value">当前状态只依赖前一个状态</div>
+      </div>
+      <div class="overview-item">
+        <div class="label">关键重构</div>
+        <div class="value">P(W|A) ∝ P(A|W)P(W)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🎬</span> 本讲视频</h2>
+    <p>建议先看视频，或对照下方笔记跳读</p>
+  </div>
+  <div class="card">
+    <div style="position:relative;width:100%;padding-bottom:56.25%;border-radius:12px;overflow:hidden;background:#000">
+      <iframe src="https://player.bilibili.com/player.html?bvid=BV1AZ17BqEv6&amp;page=1&amp;high_quality=1&amp;danmaku=0"
+              title="破解transformer第四讲 马尔可夫模型与语音识别"
+              style="position:absolute;top:0;left:0;width:100%;height:100%;border:0"
+              allowfullscreen scrolling="no"></iframe>
+    </div>
+    <p style="margin-top:12px;font-size:14px;color:var(--text-dim)">
+      ▶ 播放器无法加载时，可<a href="https://www.bilibili.com/video/BV1AZ17BqEv6" style="color:var(--accent)" target="_blank" rel="noopener">在 B 站直接观看</a>。
+    </p>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🎲</span> 一、MM 是什么：Markov 假设</h2>
+    <p>第一个同时具备「可训练、可推理、上下文生成能力」的生成器</p>
+  </div>
+  <div class="card">
+    <p>板书开篇即给出定位：<strong>Markov Model 是人们掌握的第一个同时具备「可训练」「可推理」「上下文生成能力」的生成器</strong>。</p>
+    <p>它建立在一个假设之上 —— <strong>Markov 假设</strong>：</p>
+    <div class="highlight blue">
+      <strong>🔑 Markov 假设</strong>
+      <code style="font-size:1.15em;display:block;margin-top:8px">P(w_t | w_1, w_2, …, w_{t-1}) = P(w_t | w_{t-1})</code>
+      <p style="margin-top:8px">当前词的概率只依赖<strong>前一个词</strong>，与更早的历史无关。</p>
+    </div>
+    <p>在这个假设下，整条序列的生成概率可以写成<strong>连乘</strong>形式：</p>
+    <div class="highlight purple">
+      <strong>📐 序列生成概率</strong>
+      <code style="font-size:1.05em">P(w_1, w_2, w_3, …, w_T) = P(w_1)·P(w_2|w_1)·P(w_3|w_2)·…·P(w_T|w_{T-1})</code>
+    </div>
+    <p>这个假设还可以扩展 —— 依赖更多的历史：</p>
+    <table>
+      <thead>
+        <tr><th>依赖范围</th><th>公式</th><th>名称</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>只依赖前 1 个</td><td><code>P(w_t | w_{t-1})</code></td><td><strong>一阶 MM</strong></td></tr>
+        <tr><td>依赖前 2 个</td><td><code>P(w_t | w_{t-1}, w_{t-2})</code></td><td><strong>二阶 MM</strong></td></tr>
+        <tr><td>依赖前 n 个</td><td><code>P(w_t | w_{t-1}, …, w_{t-n})</code></td><td><strong>n 阶 MM</strong></td></tr>
+      </tbody>
+    </table>
+    <p>板书给 MM 一个精炼的定位：<strong>MM 是最简单的动态概率模型</strong>。</p>
+    <div class="img-block">
+      <img src="assets/fig-01.jpg" alt="视频板书：MM 定义、Markov 假设与序列生成概率">
+      <div class="cap">🖼 图 1：MM 的定义。Markov 假设 + 序列生成概率的连乘形式 + 一阶/二阶/n 阶扩展。</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🌦</span> 二、从静态概率到动态概率</h2>
+    <p>为什么现实世界需要「动态」的模型</p>
+  </div>
+  <div class="card">
+    <p>要理解 MM 为什么是「动态概率模型」，先看两种实验的差别：</p>
+    <div class="compare">
+      <div class="col left">
+        <h4>🪙 静态概率</h4>
+        <p>随机试验可以<strong>独立、反复</strong>地进行，并且实验条件相同 —— 比如抛硬币、掷骰子。</p>
+        <p>概率分布<strong>不会随时间而改变</strong>。</p>
+      </div>
+      <div class="col right">
+        <h4>🏖 动态概率</h4>
+        <p>如果抛一枚「沙子硬币」，每抛一次都会磨损，逐渐偏向某一面 —— <strong>每次结果都会影响下一次实验条件</strong>。</p>
+        <p>概率分布<strong>随实验进程演化</strong>。</p>
+      </div>
+    </div>
+    <div class="highlight orange">
+      <strong>⚠️ 现实生活中动态概率更常见</strong>
+      天气变化、花粉扩散、股价涨落 —— 这些都无法独立重复实验。
+    </div>
+    <p>那么「Markov 假设」到底在说什么？板书先给了一个通俗但不准确的说法，再给出精确版本：</p>
+    <div class="highlight red">
+      <strong>❌ 通俗说法（太模糊）</strong>
+      「未来只与现在有关，与过去无关。」
+    </div>
+    <div class="highlight green">
+      <strong>✅ 准确解释</strong>
+      未来的概率分布会受到<strong>实验环境</strong>的影响。
+      <ul>
+        <li>对<strong>静态概率</strong>来说，环境是固定的</li>
+        <li>对<strong>动态概率</strong>来说，实验结果与环境<strong>相互影响</strong></li>
+      </ul>
+      Markov 假设：当前的环境<strong>完全由当前的实验结果决定</strong>，无需过去的实验结果 —— 只要知道现在，再额外告诉你过去，<strong>不会对预测未来有帮助</strong>。
+    </div>
+    <div class="img-block">
+      <img src="assets/fig-02.jpg" alt="视频板书：静态概率与动态概率的对比，以及 Markov 假设的准确解释">
+      <div class="cap">🖼 图 2：静态概率 vs 动态概率（沙子硬币），以及 Markov 假设的精确解释。</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🧩</span> 三、MM 的三要素与状态转移矩阵</h2>
+    <p>一个初始分布 + 一个转移矩阵，就能刻画系统演化</p>
+  </div>
+  <div class="card">
+    <p>一个<strong>离散的、状态有限的 MM</strong> 由三个部分组成：</p>
+    <div class="layers">
+      <div class="layer l1">
+        <div class="layer-title">1. 状态空间 S <span class="pill">有哪些状态</span></div>
+        <p><code>S = {s_1, s_2, s_3, …, s_N}</code>，例如天气有 {晴, 阴, 雨}。</p>
+      </div>
+      <div class="layer l2">
+        <div class="layer-title">2. 初始分布 π <span class="pill">从哪开始</span></div>
+        <p><code>π = (π_1, π_2, …, π_N)</code> 是一个概率行向量，<code>Σπ_i = 1</code>；<code>π_i = P(S_1 = s_i)</code>，表示第一天处于各个状态的概率。</p>
+      </div>
+      <div class="layer l3">
+        <div class="layer-title">3. 状态转移矩阵 A <span class="pill">怎么演化</span></div>
+        <p><code>A = {a_ij}</code>，其中 <code>a_ij = P(S_{t+1} = s_j | S_t = s_i)</code>，每行之和为 1：<code>Σ_j a_ij = 1</code>。</p>
+      </div>
+    </div>
+    <p>以天气为例，状态转移矩阵长这样：</p>
+    <div class="highlight blue">
+      <strong>📐 天气的状态转移矩阵</strong>
+      <pre style="margin-top:10px;background:#1e293b">     ⎡ 0.7  0.2  0.1 ⎤
+A =  ⎢ 0.3  0.4  0.3 ⎥
+     ⎣ 0.2  0.3  0.5 ⎦</pre>
+      <p>如果今天是晴天（s₁），那么明天继续晴的概率是 <strong>0.7</strong>，下雨的概率是 <strong>0.1</strong>。</p>
+    </div>
+    <h3 class="sub">📈 概率向量的演化规律</h3>
+    <p>如果第一天的概率向量是 <code>π^(1) = (π_1, π_2, π_3)</code>，那么有：</p>
+    <div class="highlight green">
+      <strong>🔑 演化公式</strong>
+      <code style="font-size:1.15em">π^(t+1) = π^(t) · A</code>
+      <p style="margin-top:8px">证明思路（以第 1 个状态为例）：</p>
+      <pre style="background:#1e293b;color:#e2e8f0">P(S_{t+1}=s₁) = P(S_{t+1}=s₁, S_t=s₁) + P(S_{t+1}=s₁, S_t=s₂) + P(S_{t+1}=s₁, S_t=s₃)
+             = a₁₁·P(S_t=s₁) + a₂₁·P(S_t=s₂) + a₃₁·P(S_t=s₃)
+             = π^(t) · (a₁₁, a₂₁, a₃₁)ᵀ</pre>
+    </div>
+    <div class="highlight purple">
+      <strong>💡 MM 最核心的数学公式</strong>
+      <strong>一个初始状态，一个转移矩阵，就可以刻画系统演化。</strong>
+    </div>
+    <div class="img-block">
+      <img src="assets/fig-03.jpg" alt="视频板书：MM 三要素、状态转移矩阵与概率向量演化规律">
+      <div class="cap">🖼 图 3：MM 的三要素、天气转移矩阵实例，以及 π^(t+1) = π^(t)·A 的证明。</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🛠</span> 四、MM 的三件事：训练、评分、搜索</h2>
+    <p>可训练、可推理、能打分的完整闭环</p>
+  </div>
+  <div class="card">
+    <h3 class="sub">1️⃣ 训练：统计频数</h3>
+    <p>MM 的训练<strong>非常简单</strong>。假设有许多真实训练数据，统计到：晴→雨 20 次、晴→晴 30 次、晴→阴 10 次，那么：</p>
+    <div class="highlight blue">
+      <strong>📐 用频数估计转移概率</strong>
+      <code style="font-size:1.05em;display:block;margin-top:8px">P(晴|晴) = 30/60 &nbsp;&nbsp; P(雨|晴) = 20/60 &nbsp;&nbsp; P(阴|晴) = 10/60</code>
+      <p style="margin-top:8px">同样的方法可以估计初始状态分布 π^(1)。</p>
+    </div>
+    <div class="highlight red">
+      <strong>🔴 本质</strong>
+      这种训练方法的本质是<strong>极大似然估计法</strong>。
+    </div>
+
+    <h3 class="sub">2️⃣ 评分：给序列打分</h3>
+    <p>假设 MM 已经训练好，对于给定序列 <code>W = (s_1, s_2, s_3)</code>，在 MM 下的分数就是：</p>
+    <div class="highlight green">
+      <strong>📐 序列得分</strong>
+      <code style="font-size:1.05em">π^(1)(s_1) · a_12 · a_23</code>
+      <p style="margin-top:8px">把沿途的转移概率<strong>乘起来</strong>，就可以得到整条序列的概率。</p>
+    </div>
+    <p>这就是<strong>语言模型</strong>的雏形 —— 由于多音字，语音识别会给出多个符合发音的候选序列，MM 可以给这些序列打分，从而挑出分最高的那一条：</p>
+    <div class="highlight purple">
+      <strong>💡 打分可比</strong>
+      <code>P("you eat it") &gt; P("U eat it")</code><br>
+      <code>P("There is") &gt; P("Their is")</code>
+    </div>
+    <div class="img-block">
+      <img src="assets/fig-04.jpg" alt="视频板书：评分与应用，给候选序列打分">
+      <div class="cap">🖼 图 4：评分与应用。MM 给候选序列打分，挑出分最高的那条 —— 这就是语言模型的作用。</div>
+    </div>
+
+    <h3 class="sub">3️⃣ 搜索（推理）：动态规划</h3>
+    <p>怎么找到长度为 T 的概率最大的序列？答案是<strong>动态规划</strong>。</p>
+    <p>设 <code>δ_t(s_i)</code> 为「长度为 t、最末状态为 s_i 的概率最大的路径」的概率，有递推式：</p>
+    <div class="highlight blue">
+      <strong>📐 递推公式</strong>
+      <pre style="background:#1e293b;color:#e2e8f0">δ_t(s_i) = max[ δ_{t-1}(s₁)·P(s₁→s_i), δ_{t-1}(s₂)·P(s₂→s_i), …, δ_{t-1}(s_N)·P(s_N→s_i) ]
+        = max_j  δ_{t-1}(s_j) · a_ji</pre>
+      <p style="margin-top:8px"><strong>每一步记录前一步的最优路径，最终回溯得到全局最优序列。</strong></p>
+    </div>
+    <div class="highlight purple">
+      <strong>💡 这就是维特比算法</strong>
+      把「指数级枚举」压成「逐步递推 + 回溯」，让搜索在多项式时间内完成 —— 这是 MM 可用的关键。
+    </div>
+    <div class="img-block">
+      <img src="assets/fig-05.jpg" alt="视频板书：搜索（推理）用动态规划找最优序列">
+      <div class="cap">🖼 图 5：搜索（推理）。用动态规划求最优路径，逐步记录再回溯得到全局最优序列。</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">⚖️</span> 五、MM 的优势与劣势</h2>
+    <p>为什么它只是「中庸之器」，而不是终点</p>
+  </div>
+  <div class="card">
+    <div class="compare">
+      <div class="col left">
+        <h4>✅ MM 的优势</h4>
+        <ul>
+          <li><strong>训练、推理、评分高效</strong> —— 都是统计与矩阵运算</li>
+          <li><strong>可建模上下文依赖</strong> —— 相比独立同分布前进了一大步</li>
+        </ul>
+      </div>
+      <div class="col right">
+        <h4>⚠️ MM 的劣势</h4>
+        <ul>
+          <li><strong>无长程依赖</strong>：当前步只依赖上一步。虽然可以扩展到二阶、三阶，但<strong>阶数越高，训练所需数据量、训练难度暴增</strong></li>
+          <li><strong>静态生成器</strong>：状态空间必须事先给定，对意外小概率事件的处理会导致<strong>状态数膨胀与数据稀疏</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div class="highlight blue">
+      <strong>🔑 但它的历史地位无可替代</strong>
+      即便如此，<strong>MM 是第一个击败规则系统的生成器</strong>。而它可以击败规则系统的原因是：<strong>生成器思想彻底重构了整个语音识别问题本身</strong>。
+    </div>
+    <div class="img-block">
+      <img src="assets/fig-06.jpg" alt="视频板书：MM 的优势与劣势">
+      <div class="cap">🖼 图 6：MM 的优势（高效、可建模上下文）与劣势（无长程依赖、静态生成器）。</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🔄</span> 六、重构语音识别问题：贝叶斯分解</h2>
+    <p>换一个角度，把「不可能」拆成两个「可能」</p>
+  </div>
+  <div class="card">
+    <p>统计语言学把语音识别建模成：给定语音 A，寻找句子 W，使 P(W=w_i | A=A_i) 概率最大。</p>
+    <p>但<strong>直接学习 P(W|A) 会立刻遇到困难</strong>：</p>
+    <div class="layers">
+      <div class="layer l1">
+        <div class="layer-title">困境 1：对齐困难 <span class="pill">核心难点</span></div>
+        <p>语音与文字长度完全不同，边界模糊且不唯一。一句话可以快说、可以慢说，可以口齿不清 —— 词与音的对齐关系非常复杂。</p>
+        <p>更棘手的是：一个字占多少帧声音？快说、慢说是否改变边界？连读、省略如何处理？</p>
+      </div>
+      <div class="layer l2">
+        <div class="layer-title">困境 2：多音字 <span class="pill">歧义</span></div>
+        <p>例如 <code>their</code>、<code>there</code>、<code>they're</code> 发音相同，如果无上下文，无从判断。</p>
+      </div>
+    </div>
+    <div class="highlight orange">
+      <strong>⚠️ 为什么直接建模很难</strong>
+      直接建模 P(W|A)，必须<strong>同时</strong>解决「识别出什么词」以及「对齐到哪几帧」两个问题，非常困难。
+    </div>
+    <p>IBM 的做法是<strong>换个角度，先解决部分问题</strong> —— 用贝叶斯公式：</p>
+    <div class="highlight blue">
+      <strong>🔑 贝叶斯分解</strong>
+      <pre style="background:#1e293b;color:#e2e8f0">P(W|A) = P(A|W)·P(W) / P(A)</pre>
+      <p style="margin-top:8px">当给定语音 A_i 时，<code>P(A=A_i)</code> 是不随 W 的变化而变化的常数。所以：</p>
+      <pre style="background:#1e293b;color:#e2e8f0">P(W|A) ∝ P(A|W)·P(W)</pre>
+    </div>
+    <p>那么 P(W) 和 P(A) 到底是什么？板书的回答很有哲学味：</p>
+    <div class="highlight green">
+      <strong>💚 统计语言学的世界观</strong>
+      <strong>世界是一个巨大的生成器，有自己的生成偏好。</strong>
+      <ul>
+        <li><strong>P(W)</strong> —— 世界对<strong>句子</strong>的偏好：「I want to eat」&gt;「To want I eat」，习惯语句 &gt; 胡说八道</li>
+        <li><strong>P(A)</strong> —— 世界对<strong>声音</strong>的偏好：有规律的声音 &gt; 杂乱无章</li>
+      </ul>
+      <p style="margin-top:8px">它们是世界偏好的客观反应，是某种客观存在。当给定语音 A_i 时，P(A=A_i) 是一个客观的偏好，不随 W 的变化而变化。</p>
+    </div>
+    <div class="img-block">
+      <img src="assets/fig-07.jpg" alt="视频板书：重构语音识别问题，贝叶斯分解">
+      <div class="cap">🖼 图 7：重构语音识别问题。对齐困难与多音字两个困境，以及用贝叶斯公式绕开它们。</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">🧠</span> 七、语言模型与声学模型</h2>
+    <p>两个问题各自对应一个模型</p>
+  </div>
+  <div class="card">
+    <p>把 P(W|A) ∝ P(A|W)·P(W) 拆开，两项各自有明确的含义：</p>
+    <div class="layers">
+      <div class="layer l2">
+        <div class="layer-title">P(A|W) —— 声学模型 <span class="pill">意图 → 声音</span></div>
+        <p>如果句子是 W，那么它生成声音 A 的可能性有多大？</p>
+        <p>这是「<strong>意图</strong>」→「<strong>声音</strong>」的生成判断，体现了语言的生成过程。</p>
+      </div>
+      <div class="layer l3">
+        <div class="layer-title">P(W) —— 语言模型 <span class="pill">句子是否自然</span></div>
+        <p>句子 W 本身在语言世界里是否自然、常见？它刻画了<strong>语言使用的生成偏好</strong>。</p>
+      </div>
+    </div>
+    <div class="highlight purple">
+      <strong>💡 整个贝叶斯框架的直觉</strong>
+      说话者<strong>先有表达意图 W</strong>，再<strong>发出声音 A</strong>；语音识别听到了 A，要<strong>反推最可能的 W</strong>。
+    </div>
+    <div class="highlight red">
+      <strong>🔴 这不只是数学公式的变化，也是语言观的转折</strong>
+      <strong>语言不是从规则中被推导的，而是从表达需求中被生成的。</strong>
+    </div>
+    <p>重构之后，语音识别被拆解成两个可以分别攻克的问题：</p>
+    <table>
+      <thead>
+        <tr><th>问题</th><th>内容</th><th>例子 / 方案</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>(1) 语言模型建模 P(W)</strong></td><td>判断句子在语言世界是否自然</td><td><code>There is a book</code> &gt; <code>They're is a book</code></td></tr>
+        <tr><td><strong>(2) 声学模型建模 P(A|W)</strong></td><td>判断哪个句子最有可能发出给定的语音 A</td><td>引入隐马尔可夫模型（HMM）</td></tr>
+      </tbody>
+    </table>
+    <p>IBM 在两个方向上同时给出了答案：</p>
+    <div class="highlight blue">
+      <strong>🔑 两条技术路线</strong>
+      <ul>
+        <li><strong>语言模型上</strong>：引入 <strong>n-gram</strong>，用词与词的共现频率去预测下一个词</li>
+        <li><strong>声学模型上</strong>：引入<strong>隐马尔可夫模型（HMM）</strong>，第一次在统一的概率框架中解决了「声音帧的生成」与「对齐问题」</li>
+      </ul>
+    </div>
+    <div class="highlight green">
+      <strong>✅ HMM 是第一个解决「对齐困难」的方案，是一个里程碑的突破</strong>
+      但是 HMM 的胜利<strong>不彻底</strong>：原理复杂、计算笨重，对齐虽然有了解法方案，但解决得不彻底。
+    </div>
+    <div class="highlight orange">
+      <strong>⚠️ 后续走向</strong>
+      现代语音识别走向了<strong>端到端建模</strong>。本系列对 HMM 只做简要介绍 —— 接下来先讲 <strong>n-gram 语言模型</strong>，再讲 <strong>HMM</strong>。
+    </div>
+    <div class="img-block">
+      <img src="assets/fig-08.jpg" alt="视频板书：语言模型与声学模型，n-gram 与 HMM">
+      <div class="cap">🖼 图 8：重构后的两个问题与两条技术路线 —— 语言模型上的 n-gram，声学模型上的 HMM。</div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">➡️</span> 八、本讲小结与下一讲预告</h2>
+    <p>从「一个可用的生成器」到「一个被重构的问题」</p>
+  </div>
+  <div class="card">
+    <div class="highlight blue">
+      <strong>🔑 本讲核心</strong>
+      本讲完成了两件事：<br>
+      ① <strong>造出第一个可用的生成器</strong> —— 马尔可夫模型，用极简的数学结构（初始分布 + 转移矩阵）实现了可训练、可推理、能打分。<br>
+      ② <strong>重构了问题本身</strong> —— 用贝叶斯公式把 P(W|A) 拆成 P(A|W)·P(W)，一举绕开「对齐困难」，把语音识别拆成语言模型与声学模型两个可攻克的子问题。
+    </div>
+    <div class="highlight green">
+      <strong>💚 与第 3 讲的呼应</strong>
+      第 3 讲完成了从还原论到生成论的思想转折，并指出生成器设计要在「灵活调节」与「可训练可推理」之间取得平衡。本讲的 MM 就是那个平衡点的第一个落地答案。
+    </div>
+    <div class="highlight purple">
+      <strong>🔜 下一讲预告</strong>
+      贝叶斯重构给出了两条路线。下一讲先讲<strong>语言模型</strong>这一侧：<strong>n-gram</strong> —— 用词与词的共现频率去预测下一个词；之后讲<strong>声学模型</strong>这一侧：<strong>HMM</strong>。
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📌</span> 一页速查</h2>
+    <p>本讲全部结论，可独立使用</p>
+  </div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>问题</th><th>结论</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>MM 的历史地位？</td><td>第一个同时具备「可训练」「可推理」「上下文生成能力」的生成器</td></tr>
+        <tr><td>Markov 假设是什么？</td><td>P(w_t | w_1…w_{t-1}) = P(w_t | w_{t-1})，当前词只依赖前一个词</td></tr>
+        <tr><td>序列生成概率怎么写？</td><td>连乘：P(w_1)·P(w_2|w_1)·P(w_3|w_2)·…·P(w_T|w_{T-1})</td></tr>
+        <tr><td>一阶 / 二阶 / n 阶 MM？</td><td>分别依赖前 1 个 / 前 2 个 / 前 n 个历史词</td></tr>
+        <tr><td>静态概率与动态概率的差别？</td><td>静态：可独立反复、条件相同、分布不随时间变；动态：结果会影响下次实验条件</td></tr>
+        <tr><td>Markov 假设的准确含义？</td><td>当前环境完全由当前实验结果决定，过去的实验结果对预测未来没有额外帮助</td></tr>
+        <tr><td>MM 的三要素？</td><td>① 状态空间 S ② 初始分布 π ③ 状态转移矩阵 A</td></tr>
+        <tr><td>转移矩阵元素满足什么？</td><td>a_ij = P(S_{t+1}=s_j | S_t=s_i)，每行之和为 1</td></tr>
+        <tr><td>核心演化公式？</td><td>π^(t+1) = π^(t)·A</td></tr>
+        <tr><td>MM 怎么训练？</td><td>统计频数估计转移概率，本质是极大似然估计法</td></tr>
+        <tr><td>MM 怎么评分？</td><td>把沿途的转移概率乘起来，即 π^(1)(s_1)·a_12·a_23·…</td></tr>
+        <tr><td>MM 打分有什么用？</td><td>给多音字产生的候选序列打分，挑出分最高的 —— 即语言模型</td></tr>
+        <tr><td>MM 怎么搜索最优序列？</td><td>动态规划：δ_t(s_i) = max_j δ_{t-1}(s_j)·a_ji，记录并回溯</td></tr>
+        <tr><td>MM 的优势？</td><td>① 训练/推理/评分高效 ② 可建模上下文依赖</td></tr>
+        <tr><td>MM 的劣势？</td><td>① 无长程依赖，阶数越高训练数据量与难度暴增 ② 静态生成器，状态空间需事先给定，易状态膨胀与数据稀疏</td></tr>
+        <tr><td>MM 为什么能击败规则系统？</td><td>生成器思想彻底重构了整个语音识别问题本身</td></tr>
+        <tr><td>直接建模 P(W|A) 的两个困难？</td><td>① 对齐困难（长度不同、边界模糊、快慢/连读/省略）② 多音字（their / there / they're）</td></tr>
+        <tr><td>贝叶斯分解？</td><td>P(W|A) = P(A|W)P(W)/P(A) ∝ P(A|W)P(W)</td></tr>
+        <tr><td>P(A|W) 是什么？</td><td>声学模型：意图 → 声音的生成判断</td></tr>
+        <tr><td>P(W) 是什么？</td><td>语言模型：句子在语言世界是否自然、常见</td></tr>
+        <tr><td>贝叶斯框架的直觉？</td><td>说话者先有意图 W，再发出声音 A；识别是听到 A 反推最可能的 W</td></tr>
+        <tr><td>语言观上的转折？</td><td>语言不是从规则中被推导的，而是从表达需求中被生成的</td></tr>
+        <tr><td>重构后的两条技术路线？</td><td>语言模型用 n-gram；声学模型用 HMM</td></tr>
+        <tr><td>HMM 的意义与局限？</td><td>第一个解决「对齐困难」的方案，里程碑突破；但胜利不彻底，原理复杂、计算笨重</td></tr>
+        <tr><td>下一讲讲什么？</td><td>先讲 n-gram 语言模型，再讲 HMM</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📖</span> 术语表</h2>
+    <p>本讲出现的关键概念</p>
+  </div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>术语</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>马尔可夫模型 (MM)</strong></td><td>Markov Model。第一个同时具备可训练、可推理、上下文生成能力的生成器，也是最简单的动态概率模型。</td></tr>
+        <tr><td><strong>Markov 假设</strong></td><td>P(w_t | w_1…w_{t-1}) = P(w_t | w_{t-1})。当前状态只依赖前一个状态；准确含义是当前环境完全由当前实验结果决定。</td></tr>
+        <tr><td><strong>n 阶 MM</strong></td><td>依赖前 n 个历史的马尔可夫模型。一阶依赖前 1 个，二阶依赖前 2 个，依此类推。</td></tr>
+        <tr><td><strong>静态概率</strong></td><td>随机试验可独立反复进行、实验条件相同、概率分布不随时间改变（如抛硬币、掷骰子）。</td></tr>
+        <tr><td><strong>动态概率</strong></td><td>实验结果会影响下一次实验条件，概率分布随进程演化（如「沙子硬币」）。现实世界更常见。</td></tr>
+        <tr><td><strong>状态空间 S</strong></td><td>MM 三要素之一。<code>S = {s_1, …, s_N}</code>，系统所有可能状态的集合。</td></tr>
+        <tr><td><strong>初始分布 π</strong></td><td>MM 三要素之一。概率行向量，π_i = P(S_1 = s_i)，表示初始时刻处于各状态的概率。</td></tr>
+        <tr><td><strong>状态转移矩阵 A</strong></td><td>MM 三要素之一。a_ij = P(S_{t+1}=s_j | S_t=s_i)，每行之和为 1，描述状态间如何演化。</td></tr>
+        <tr><td><strong>概率向量演化</strong></td><td>π^(t+1) = π^(t)·A。一个初始状态加一个转移矩阵，就能刻画整个系统演化。</td></tr>
+        <tr><td><strong>极大似然估计</strong></td><td>MM 训练方法的本质：用统计频数（如 晴→雨 20 次 / 共 60 次）直接估计转移概率。</td></tr>
+        <tr><td><strong>序列评分</strong></td><td>把沿途的转移概率乘起来得到整条序列的概率，用于给候选序列打分排序。</td></tr>
+        <tr><td><strong>动态规划 / 维特比搜索</strong></td><td>求概率最大序列的方法：δ_t(s_i) = max_j δ_{t-1}(s_j)·a_ji，每步记录最优前驱，最终回溯得到全局最优序列。</td></tr>
+        <tr><td><strong>对齐困难</strong></td><td>语音识别直接建模 P(W|A) 的核心障碍：语音与文字长度不同、边界模糊不唯一，快说慢说、连读省略都会改变对齐关系。</td></tr>
+        <tr><td><strong>多音字</strong></td><td>另一困境：their / there / they're 发音相同，没有上下文无从判断该识别成哪个词。</td></tr>
+        <tr><td><strong>贝叶斯分解</strong></td><td>P(W|A) = P(A|W)P(W)/P(A) ∝ P(A|W)P(W)。把「同时解决识别与对齐」的难题拆成两个可分别攻克的子问题。</td></tr>
+        <tr><td><strong>语言模型 P(W)</strong></td><td>刻画句子在语言世界里是否自然、常见，即「语言使用的生成偏好」。</td></tr>
+        <tr><td><strong>声学模型 P(A|W)</strong></td><td>给定句子 W，它生成声音 A 的可能性。「意图 → 声音」的生成判断。</td></tr>
+        <tr><td><strong>n-gram</strong></td><td>语言模型侧的技术路线：用词与词的共现频率去预测下一个词（下一讲主题）。</td></tr>
+        <tr><td><strong>隐马尔可夫模型 (HMM)</strong></td><td>声学模型侧的技术路线：第一次在统一概率框架中解决「声音帧的生成」与「对齐问题」，是里程碑突破，但胜利不彻底。</td></tr>
+        <tr><td><strong>端到端建模</strong></td><td>现代语音识别的走向：不再把问题拆成语言模型与声学模型两段，而是整体建模。</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📚</span> 系列导航</h2>
+    <p>当前是第 4 讲</p>
+  </div>
+  <div class="card">
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="t-time">第 1 讲 · 已发布</div>
+        <div class="t-title"><a href="../01-开篇/" style="color:var(--accent);text-decoration:none">开篇：论文难懂，是因为「历史脚手架」被拆光了</a></div>
+        <div class="t-desc">为什么破解而非教学 · 两个误区 · 内容规划 · 先修知识</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">第 2 讲 · 已发布</div>
+        <div class="t-title"><a href="../02-规则系统/" style="color:var(--accent);text-decoration:none">规则系统为什么失败：语言不是被规则推演出来的</a></div>
+        <div class="t-desc">鸟飞派与 Georgetown-IBM · 编译器类比 · 句法三困境 · 语义深渊 · 世界决定语言</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">第 3 讲 · 已发布</div>
+        <div class="t-title"><a href="../03-统计语言学/" style="color:var(--accent);text-decoration:none">从还原论到生成论：统计语言学的思想转折</a></div>
+        <div class="t-desc">IBM 语音识别 · 核心公式 W* = argmax P(W|A) · 生成器 · 马尔可夫模型雏形</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">第 4 讲 · 你在这里</div>
+        <div class="t-title">马尔可夫模型与语音识别：第一个能训练、能推理的生成器</div>
+        <div class="t-desc">Markov 假设 · 三要素与转移矩阵 · 训练/评分/搜索 · 贝叶斯重构 · n-gram 与 HMM</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">第 5 讲 · 待更新</div>
+        <div class="t-title">n-gram 语言模型 与 HMM</div>
+        <div class="t-desc">贝叶斯重构后的两条技术路线</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>🎬 本笔记根据视频内容整理 · 配图截取自视频原片</p>
+  <p>原始视频：<a href="https://www.bilibili.com/video/BV1AZ17BqEv6" target="_blank" rel="noopener">B站 BV1AZ17BqEv6</a> ·《破解transformer第四讲 马尔可夫模型与语音识别》· UP主：<a href="https://space.bilibili.com/287989852" target="_blank" rel="noopener">忠厚老实的老王</a></p>
+  <p><a href="../03-统计语言学/">← 上一讲：统计语言学</a> · <a href="../">系列目录</a></p>
+  <p><a href="../../">← 返回知识库首页</a></p>
+</footer>
+
+</body>
+</html>
