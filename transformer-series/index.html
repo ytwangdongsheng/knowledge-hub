@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>破解 Transformer 系列 — 从原理到实战</title>
-<meta name="description" content="系统性学习 Transformer 架构：从 Self-Attention 原理、位置编码、多头注意力，到 Encoder-Decoder 结构与实战应用。视频系列配套笔记，按顺序学习。">
+<title>破解 Transformer 系列 — 视频图文笔记</title>
+<meta name="description" content="《破解 transformer》视频系列图文笔记：第 1 讲开篇——论文《Attention is all you need》为什么难懂、要破除哪两个误区、本系列讲什么、需要哪些先修知识。">
 <style>
   :root {
     --bg: #fafaf7;
@@ -98,310 +98,608 @@
     margin-bottom: 20px;
     box-shadow: var(--shadow);
   }
+  .card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card p, .card li { font-size: 15px; color: var(--text); }
+  .card p + p { margin-top: 10px; }
+  .card ul, .card ol { padding-left: 22px; margin-top: 10px; }
+  .card li + li { margin-top: 6px; }
 
   /* Highlight boxes */
   .highlight {
     border-radius: 12px;
-    padding: 18px 20px;
+    padding: 18px 22px;
     margin: 16px 0;
-    border-left: 4px solid;
   }
-  .highlight.blue { background: var(--accent-light); border-color: var(--accent); }
-  .highlight.green { background: var(--green-light); border-color: var(--green); }
-  .highlight.orange { background: var(--orange-light); border-color: var(--orange); }
-  .highlight.red { background: var(--red-light); border-color: var(--red); }
-  .highlight.purple { background: var(--purple-light); border-color: var(--purple); }
-  .highlight strong { display: block; margin-bottom: 6px; }
+  .highlight.blue { background: var(--accent-light); border-left: 4px solid var(--accent); }
+  .highlight.green { background: var(--green-light); border-left: 4px solid var(--green); }
+  .highlight.orange { background: var(--orange-light); border-left: 4px solid var(--orange); }
+  .highlight.red { background: var(--red-light); border-left: 4px solid var(--red); }
+  .highlight.purple { background: var(--purple-light); border-left: 4px solid var(--purple); }
+  .highlight > strong:first-child { display: block; margin-bottom: 6px; }
+  .highlight ul { margin-top: 6px; }
 
-  /* Video embed */
-  .video-embed {
-    position: relative;
-    width: 100%;
-    padding-bottom: 56.25%;
+  /* Code blocks */
+  pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px;
+    line-height: 1.7;
+    margin: 16px 0;
+  }
+  pre code { color: inherit; background: none; padding: 0; }
+  code {
+    background: #f1f5f9;
+    color: #db2777;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+  }
+
+  /* Images */
+  .img-block {
+    margin: 20px 0;
     border-radius: 12px;
     overflow: hidden;
-    background: #000;
-    margin: 20px 0;
-  }
-  .video-embed iframe {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    border: none;
-  }
-
-  /* Episode list */
-  .episode-nav {
-    background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 20px 24px;
-    margin-bottom: 32px;
+    box-shadow: var(--shadow);
+    background: #fff;
   }
-  .episode-nav h3 {
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 12px;
+  .img-block img {
+    width: 100%;
+    display: block;
+  }
+  .img-block .cap {
+    padding: 10px 14px;
+    font-size: 13px;
     color: var(--text-dim);
-  }
-  .episode-list {
-    list-style: none;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 8px;
-  }
-  .episode-list li {
-    font-size: 14px;
-  }
-  .episode-list a {
-    color: var(--accent);
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    border-radius: 8px;
-    transition: background 0.15s;
-  }
-  .episode-list a:hover { background: var(--accent-light); }
-  .episode-list .current {
-    background: var(--accent-light);
-    font-weight: 600;
-  }
-  .episode-list .upcoming {
-    color: var(--text-dimmer);
-    cursor: default;
+    background: #f9fafb;
+    border-top: 1px solid var(--border);
   }
 
-  /* Key points */
-  .key-point {
+  /* Flow diagram */
+  .flow {
     display: flex;
-    gap: 14px;
-    margin: 16px 0;
-    padding: 16px;
-    background: var(--card);
-    border-radius: 12px;
-    border: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    margin: 24px 0;
   }
-  .key-point .num {
-    flex-shrink: 0;
-    width: 32px; height: 32px;
+  .flow-item {
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 14px 20px;
+    text-align: center;
+    min-width: 110px;
+    box-shadow: var(--shadow);
+  }
+  .flow-item .num {
+    display: inline-block;
+    width: 28px; height: 28px;
+    line-height: 28px;
+    border-radius: 50%;
     background: var(--accent);
     color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     font-weight: 700;
     font-size: 14px;
+    margin-bottom: 8px;
   }
-  .key-point .content { flex: 1; }
-  .key-point h4 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-  .key-point p { font-size: 14px; color: var(--text-dim); }
+  .flow-item .label {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .flow-item .sub-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--text-dimmer);
+    font-size: 20px;
+  }
 
-  /* Timeline */
-  .timeline {
-    position: relative;
-    padding-left: 28px;
+  /* Overview grid */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 18px 0;
+  }
+  .overview-item {
+    background: var(--accent-light);
+    border-radius: 12px;
+    padding: 16px 18px;
+    border-left: 4px solid var(--accent);
+  }
+  .overview-item .label {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.4px;
+  }
+  .overview-item .value {
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  /* Layers */
+  .layers { margin: 22px 0; }
+  .layer {
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    border-left: 5px solid;
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+  .layer.l1 { border-left-color: #f59e0b; }
+  .layer.l2 { border-left-color: var(--accent); }
+  .layer.l3 { border-left-color: var(--green); }
+  .layer .layer-title {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .layer .pill {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: var(--text-dim);
+  }
+  .layer p { font-size: 14.5px; color: var(--text-dim); }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+  tr:hover td { background: #fafafa; }
+
+  /* Two column compare */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
     margin: 20px 0;
   }
+  .compare .col {
+    border-radius: 12px;
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    background: var(--card);
+  }
+  .compare .col h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .compare .col.left { border-top: 3px solid var(--purple); }
+  .compare .col.right { border-top: 3px solid var(--green); }
+  .compare .col ul { padding-left: 20px; }
+  .compare .col li { font-size: 14px; margin-bottom: 5px; }
+
+  /* Timeline */
+  .timeline { position: relative; margin: 22px 0; padding-left: 26px; }
   .timeline::before {
     content: '';
     position: absolute;
-    left: 8px; top: 0; bottom: 0;
+    left: 5px; top: 6px; bottom: 6px;
     width: 2px;
     background: var(--border);
   }
   .timeline-item {
     position: relative;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   .timeline-item::before {
     content: '';
     position: absolute;
-    left: -24px; top: 6px;
+    left: -26px; top: 9px;
     width: 12px; height: 12px;
-    background: var(--accent);
     border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 0 0 2px var(--accent);
+    background: var(--accent);
+    border: 2px solid var(--bg);
   }
-  .timeline-item h4 {
-    font-size: 15px;
-    font-weight: 600;
-    margin-bottom: 4px;
+  .timeline-item .t-time {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: ui-monospace, Menlo, Consolas, monospace;
   }
-  .timeline-item p {
-    font-size: 14px;
-    color: var(--text-dim);
-  }
+  .timeline-item .t-title { font-size: 15px; font-weight: 600; }
+  .timeline-item .t-desc { font-size: 14px; color: var(--text-dim); }
 
   /* Footer */
   footer {
-    background: var(--card);
     border-top: 1px solid var(--border);
-    padding: 32px 24px;
+    padding: 32px 20px;
     text-align: center;
-    font-size: 14px;
-    color: var(--text-dim);
+    color: var(--text-dimmer);
+    font-size: 13px;
   }
   footer a { color: var(--accent); text-decoration: none; }
-  footer a:hover { text-decoration: underline; }
+  footer p + p { margin-top: 6px; }
 
-  /* Responsive */
-  @media (max-width: 600px) {
+  @media (max-width: 640px) {
     .hero { padding: 40px 16px 36px; }
     section { padding: 32px 0; }
     .card { padding: 18px; }
-    .episode-list { grid-template-columns: 1fr; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .compare { grid-template-columns: 1fr; }
+    .overview-grid { grid-template-columns: 1fr; }
+    pre { font-size: 12.5px; padding: 14px; }
   }
 </style>
 </head>
 <body>
 
-<!-- Hero -->
 <div class="hero">
   <h1>🧠 破解 Transformer 系列</h1>
-  <p>从 Self-Attention 到 Encoder-Decoder，系统性掌握 Transformer 架构原理与实战应用</p>
-  <div class="meta">视频系列：忠厚老实的老王 · 配套图文笔记 · 持续更新中</div>
+  <p>不是「教学」，而是「破解」—— 还原被论文拆掉的「历史脚手架」</p>
+  <div class="meta">来源：B站 BV1pRWRzqEVf · 第 1 讲 约 15 分钟 · UP主：忠厚老实的老王</div>
 </div>
 
-<!-- Episode Navigation -->
-<div class="wrap" style="padding-top: 40px;">
-  <div class="episode-nav">
-    <h3>📚 系列目录</h3>
-    <ul class="episode-list">
-      <li><a href="#ep01" class="current">第 1 讲 · 开篇：为什么需要 Transformer</a></li>
-      <li><a class="upcoming">第 2 讲 · 即将更新</a></li>
-      <li><a class="upcoming">第 3 讲 · 即将更新</a></li>
-      <li><a class="upcoming">第 4 讲 · 即将更新</a></li>
-      <li><a class="upcoming">第 5 讲 · 即将更新</a></li>
-    </ul>
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">⚡</span> 30 秒总览</h2>
+    <p>这一讲不教你任何公式，只回答「为什么必须这样学」</p>
   </div>
-</div>
-
-<!-- Episode 01 -->
-<section id="ep01">
-  <div class="wrap">
-    <div class="sec-head">
-      <h2><span class="emoji">📺</span> 第 1 讲 · 开篇：为什么需要 Transformer</h2>
-      <p>理解 Transformer 出现的背景、解决的核心问题，以及本系列的学习路线</p>
-    </div>
-
-    <!-- Video Embed -->
-    <div class="card">
-      <div class="video-embed">
-        <iframe src="//player.bilibili.com/player.php?bvid=BV1pRWRzqEVf&high_quality=1&danmaku=0" allowfullscreen></iframe>
-      </div>
-      <div style="margin-top: 12px; font-size: 14px; color: var(--text-dim);">
-        <strong>视频信息</strong> · UP主：忠厚老实的老王 · 时长：约 15 分钟 · 
-        <a href="https://www.bilibili.com/video/BV1pRWRzqEVf" target="_blank">在 B 站观看</a>
-      </div>
-    </div>
-
-    <!-- 30-second overview -->
+  <div class="card">
     <div class="highlight blue">
-      <strong>⏱ 30 秒总览</strong>
-      本讲是 Transformer 系列的开篇，主要回答三个问题：<strong>为什么需要 Transformer？它解决了什么问题？本系列如何展开？</strong>视频从传统序列模型（RNN/LSTM）的局限性出发，引出 Transformer 的核心创新——Self-Attention 机制，并概述了 Transformer 在 NLP、CV 等领域的革命性影响。
+      <strong>🎯 一句话抓住本讲</strong>
+      Transformer 是当下最成功的模型，但论文《Attention is all you need》极难读懂 —— <strong>原因不是 Transformer 本身晦涩，而是它是一份「最后一个完成品」</strong>：作为集大成者，论文把历史上的脚手架拆得一干二净，只留下了完好的成品。所以本系列做的不是「教学」，而是<strong>「破解」：还原它的思路，还原它的历史脚手架</strong>。
     </div>
-
-    <!-- Key Points -->
-    <h3 class="sub">🎯 核心知识点</h3>
-
-    <div class="key-point">
-      <div class="num">1</div>
-      <div class="content">
-        <h4>序列建模的演进</h4>
-        <p>从 RNN → LSTM/GRU → Seq2Seq，序列模型逐步解决了长距离依赖问题，但<strong>无法并行计算</strong>成为瓶颈。训练速度慢、难以利用 GPU 加速，限制了模型规模和数据量的扩展。</p>
+    <div class="overview-grid">
+      <div class="overview-item">
+        <div class="label">第 1 讲定位</div>
+        <div class="value">开篇 · 路线图与方法论</div>
+      </div>
+      <div class="overview-item">
+        <div class="label">视频时长</div>
+        <div class="value">约 15 分钟</div>
+      </div>
+      <div class="overview-item">
+        <div class="label">本系列分 4 个阶段</div>
+        <div class="value">规则系统 → 统计语言 → 端到端 → RNN 到 Transformer</div>
+      </div>
+      <div class="overview-item">
+        <div class="label">先修要求</div>
+        <div class="value">微积分 / 线代 / 概统 + 动态规划 + 一点最优化与深度学习</div>
       </div>
     </div>
-
-    <div class="key-point">
-      <div class="num">2</div>
-      <div class="content">
-        <h4>Transformer 的核心突破</h4>
-        <p>2017 年 Google 提出 Transformer，用 <strong>Self-Attention</strong> 完全替代循环结构。关键优势：① 并行计算（训练速度大幅提升）；② 直接建模全局依赖（任意两个位置直接交互）；③ 可扩展性强（支撑了 GPT、BERT 等大模型）。</p>
-      </div>
-    </div>
-
-    <div class="key-point">
-      <div class="num">3</div>
-      <div class="content">
-        <h4>Self-Attention 的直觉</h4>
-        <p>核心思想：对于序列中的每个位置，计算它与所有其他位置的"相关性"（注意力权重），然后加权聚合信息。这样每个 token 都能"看到"整个序列，而不是像 RNN 那样只能逐步传递。</p>
-      </div>
-    </div>
-
-    <div class="key-point">
-      <div class="num">4</div>
-      <div class="content">
-        <h4>Transformer 的应用版图</h4>
-        <p>从 NLP（机器翻译、文本生成、问答）扩展到 CV（图像分类、目标检测）、多模态（CLIP、DALL-E）、语音（Whisper）等领域。Transformer 已成为深度学习的<strong>基础架构</strong>。</p>
-      </div>
-    </div>
-
-    <!-- Learning Roadmap -->
-    <h3 class="sub">🗺 本系列学习路线</h3>
-
-    <div class="timeline">
-      <div class="timeline-item">
-        <h4>第 1 讲 · 开篇（本讲）</h4>
-        <p>背景动机、核心思想概览、系列结构介绍</p>
-      </div>
-      <div class="timeline-item">
-        <h4>第 2 讲 · Self-Attention 详解</h4>
-        <p>Q/K/V 矩阵、注意力计算公式、缩放因子的作用</p>
-      </div>
-      <div class="timeline-item">
-        <h4>第 3 讲 · 多头注意力与位置编码</h4>
-        <p>Multi-Head Attention、Positional Encoding、为什么需要位置信息</p>
-      </div>
-      <div class="timeline-item">
-        <h4>第 4 讲 · Encoder-Decoder 结构</h4>
-        <p>完整的 Transformer 架构、残差连接、Layer Normalization</p>
-      </div>
-      <div class="timeline-item">
-        <h4>第 5 讲 · 实战：从零实现 Transformer</h4>
-        <p>用 PyTorch 手写 Transformer、训练机器翻译模型</p>
-      </div>
-    </div>
-
-    <!-- Common misconceptions -->
-    <h3 class="sub">⚠️ 常见误区澄清</h3>
-
-    <div class="highlight orange">
-      <strong>误区 1：Transformer 只能处理文本</strong>
-      虽然 Transformer 起源于 NLP，但其核心思想（全局注意力机制）适用于任何序列数据。图像可以被展平为 patch 序列，音频可以是帧序列，甚至图结构数据也有 Graph Transformer 变体。
-    </div>
-
-    <div class="highlight orange">
-      <strong>误区 2：Self-Attention 计算量太大，不实用</strong>
-      标准 Self-Attention 确实是 O(n²) 复杂度，但实际应用中通过分块计算、稀疏注意力（如 Longformer）、线性注意力等优化手段，已经可以处理数万 token 的长序列。
-    </div>
-
-    <div class="highlight orange">
-      <strong>误区 3：Transformer 完全取代了 RNN</strong>
-      在某些场景下（如流式处理、极低延迟要求），RNN 仍有优势。Transformer 更适合离线批量处理和长序列建模，两者是互补关系而非完全替代。
-    </div>
-
-    <!-- Summary -->
-    <div class="highlight green">
-      <strong>✅ 本讲小结</strong>
-      Transformer 的出现解决了序列建模的并行化瓶颈，通过 Self-Attention 机制实现了全局依赖的直接建模。本系列将从原理到实战，逐步拆解 Transformer 的每个组件。下一讲将深入 Self-Attention 的数学细节。
-    </div>
-
   </div>
 </section>
 
-<!-- Footer -->
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📚</span> 系列目录</h2>
+    <p>四阶段递进，从机器翻译的源头讲到 Transformer</p>
+  </div>
+  <div class="card">
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="t-time">第 1 讲 · 本页</div>
+        <div class="t-title">开篇：论文难懂，是因为「历史脚手架」被拆光了</div>
+        <div class="t-desc">为什么破解而非教学 · 两个误区 · 内容规划 · 先修知识</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">第 2 讲 · 待更新</div>
+        <div class="t-title">规则系统</div>
+        <div class="t-desc">阶段一：在统计方法之前，人们如何用规则做机器翻译</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">第 3 讲 · 待更新</div>
+        <div class="t-title">统计语言</div>
+        <div class="t-desc">阶段二：从规则走向概率，语言模型的思想起点</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">第 4 讲 · 待更新</div>
+        <div class="t-title">端到端的起点</div>
+        <div class="t-desc">阶段三：不再手工设计特征，让模型自己学</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-time">第 5 讲 · 待更新</div>
+        <div class="t-title">从 RNN 到 Transformer</div>
+        <div class="t-desc">阶段四：注意力机制如何一步步取代循环结构</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="ep01">
+  <div class="sec-head">
+    <h2><span class="emoji">📺</span> 第 1 讲 · 开篇：论文难懂，是因为「历史脚手架」被拆光了</h2>
+    <p>视频约 15 分钟 · UP主：忠厚老实的老王</p>
+  </div>
+
+  <div class="card">
+    <div style="position:relative;width:100%;padding-bottom:56.25%;border-radius:12px;overflow:hidden;background:#000">
+      <iframe src="https://player.bilibili.com/player.html?bvid=BV1pRWRzqEVf&amp;page=1&amp;high_quality=1&amp;danmaku=0"
+              title="破解transformer第一讲 开篇"
+              style="position:absolute;top:0;left:0;width:100%;height:100%;border:0"
+              allowfullscreen scrolling="no"></iframe>
+    </div>
+    <p style="margin-top:12px;font-size:14px;color:var(--text-dim)">
+      ▶ 播放器无法加载时，可<a href="https://www.bilibili.com/video/BV1pRWRzqEVf" style="color:var(--accent)" target="_blank" rel="noopener">在 B 站直接观看</a>。
+    </p>
+  </div>
+
+  <h3 class="sub">🧩 一、为什么这篇论文这么难懂？</h3>
+  <div class="card">
+    <p>视频开篇先立一个判断：<strong>Transformer 是最成功的模型</strong>。但紧接着指出一个所有人都有的体验 —— 它背后的论文《Attention is all you need》<strong>难以理解</strong>。</p>
+    <p>关键在于对「难懂」的归因。UP 主给出的解释是：</p>
+    <div class="highlight blue">
+      <strong>💡 难懂的真实原因</strong>
+      不是 Transformer 本身晦涩，而是<strong>它是最后一个完成品、集大成者</strong>。论文把历史脚手架拆得一干二净，只留下了完好的成品。
+    </div>
+    <p>这个判断直接决定了整个系列的讲法：</p>
+    <div class="highlight red">
+      <strong>🔴 不是「教学」，而是「破解」</strong>
+      破解它（transformer）的思路，还原它的历史脚手架 —— 而不是把成品再复述一遍。
+    </div>
+    <p>如此定位的落点是<strong>提升你的人工智能素养</strong>：理解一个模型是怎么被「逼」出来的，而不只是记住它长什么样。</p>
+    <div class="img-block">
+      <img src="assets/fig-01.jpg" alt="视频板书：论文难懂的原因是历史脚手架被拆光">
+      <div class="cap">🖼 图 1：开篇核心论证。板书依次给出「Transformer 是最成功的模型 → 论文难以理解 → 原因是历史脚手架被拆光 → 不是教学而是破解」。</div>
+    </div>
+  </div>
+
+  <h3 class="sub">🚫 二、必须破除的两个误区</h3>
+  <div class="card">
+    <p>在进入正题前，UP 主先把两个常见的错误认知摆在台面上，作为本系列要拆掉的第一批「脚手架」：</p>
+    <div class="highlight purple">
+      <strong>误区一：Transformer 是复杂的函数拟合器</strong>
+      「AI 就是复杂的非线性拟合函数」—— 这是一种把架构等同于拟合器的还原论式理解。
+    </div>
+    <div class="highlight purple">
+      <strong>误区二：Transformer 是黑箱，无法理解，无法解释</strong>
+      「参数量太大，所以只能当黑箱用」—— 这种说法会直接取消「理解」的必要性。
+    </div>
+    <div class="highlight orange">
+      <strong>⚠️ 为什么先讲误区</strong>
+      这两个误区都会让人放弃追问「为什么这样设计」。而本系列的全部内容，恰恰建立在「它是可以被理解的」这个前提上。
+    </div>
+  </div>
+
+  <h3 class="sub">📉 三、现有教程的不足</h3>
+  <div class="card">
+    <p>既然要「破解」，就得先说明为什么现有材料不够用。UP 主对市面上的主流教程逐类做了评价：</p>
+    <table>
+      <thead>
+        <tr><th>教程来源</th><th>不足</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>吴恩达 / 李宏毅 / 李沐</td><td>太早，过时</td></tr>
+        <tr><td>其它（多数中文教程）</td><td>基本就是抄，二道贩子，无自己的见解</td></tr>
+        <tr><td>3Blue1Brown、词嵌入类内容、王木大学科学</td><td>零碎，内容太少，不系统</td></tr>
+      </tbody>
+    </table>
+    <div class="highlight green">
+      <strong>✅ 由此定下的目标</strong>
+      写出<strong>青出于蓝的作品</strong>。
+    </div>
+    <div class="highlight orange">
+      <strong>⚠️ 阅读提示</strong>
+      上表是 UP 主在视频中的主观评价（原话为评价性表述），此处如实转述，供你判断参考，不代表本笔记立场。
+    </div>
+  </div>
+
+  <h3 class="sub">🗺 四、先看终点：完整架构图</h3>
+  <div class="card">
+    <p>有意思的是，第 1 讲就把完整的 Transformer 架构图手绘出来了 —— 先让你看一眼「终点长什么样」，再回头补路上的每一段历史。</p>
+    <div class="img-block">
+      <img src="assets/fig-02.jpg" alt="手绘的完整 Transformer 架构图：左侧 encoder，右侧 decoder">
+      <div class="cap">🖼 图 2：完整架构图（视频手绘）。左为 encoder，右为 decoder，两者均为「自注意力 + 前馈网络」的堆叠，每层后接 Add &amp; Norm。</div>
+    </div>
+    <div class="compare">
+      <div class="col left">
+        <h4>🧱 Encoder（左）</h4>
+        <ul>
+          <li>输入 → <strong>词嵌入</strong></li>
+          <li>词嵌入 <strong>⊕ 位置编码</strong></li>
+          <li><strong>多头自注意力机制</strong></li>
+          <li><strong>Add &amp; Norm</strong>（残差 + 归一化）</li>
+          <li><strong>前馈网络</strong></li>
+          <li><strong>Add &amp; Norm</strong></li>
+        </ul>
+      </div>
+      <div class="col right">
+        <h4>🎯 Decoder（右）</h4>
+        <ul>
+          <li>输出 → <strong>词嵌入</strong> → <strong>⊕ 位置编码</strong></li>
+          <li><strong>多头因果注意力机制</strong></li>
+          <li><strong>Add &amp; Norm</strong></li>
+          <li><strong>多头注意力机制</strong>（接收 encoder 输出）</li>
+          <li><strong>Add &amp; Norm</strong> → <strong>前馈网络</strong> → <strong>Add &amp; Norm</strong></li>
+          <li><strong>linear</strong> → <strong>Softmax</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div class="highlight blue">
+      <strong>🔗 两半之间唯一的连接</strong>
+      encoder 的输出被送进 decoder 的「多头注意力机制」（即交叉注意力）—— 这是左右两半唯一的桥。
+    </div>
+    <p>注意板书用的是<strong>「多头因果注意力机制」</strong>这一说法，对应论文里的 Masked Multi-Head Attention：它保证解码时只能看到已生成的部分，不能偷看未来。</p>
+  </div>
+
+  <h3 class="sub">📋 五、本系列讲什么</h3>
+  <div class="card">
+    <p>UP 主明确划定了范围：<strong>除了词嵌入不讲（3Blue1Brown 已讲），其它全讲，深入讲解</strong>。而整条主线是 —— Transformer 用于机器翻译，所以<strong>从机器翻译的源头开始讲起</strong>。</p>
+    <div class="img-block">
+      <img src="assets/fig-03.jpg" alt="视频板书：内容规划四阶段">
+      <div class="cap">🖼 图 3：内容规划。四个阶段依次展开，并明确「除了词嵌入不讲，其它全讲」。</div>
+    </div>
+    <div class="flow">
+      <div class="flow-item">
+        <div class="num">1</div>
+        <div class="label">规则系统</div>
+        <div class="sub-label">手工规则时代</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item">
+        <div class="num">2</div>
+        <div class="label">统计语言</div>
+        <div class="sub-label">概率建模</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item">
+        <div class="num">3</div>
+        <div class="label">端到端的起点</div>
+        <div class="sub-label">让模型自己学</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item">
+        <div class="num">4</div>
+        <div class="label">从 RNN 到 Transformer</div>
+        <div class="sub-label">注意力登场</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="sub">🌱 六、教学理念：让知识从内心长出来</h3>
+  <div class="card">
+    <p>这一讲最值得记下来的，其实是 UP 主对「怎么学」的主张。原话大意是：</p>
+    <div class="highlight green">
+      <strong>💚 不希望灌输知识</strong>
+      希望你自己<strong>自然而然地「发明」了 Transformer</strong> —— 知识不是被告诉的，而是内心长出来的。
+    </div>
+    <p>这句话解释了为什么本系列要从「规则系统」这种看起来和 Transformer 毫无关系的地方讲起：只有沿着真实的历史演进走一遍，每个设计才会显得<strong>不得不如此</strong>，而不是凭空规定的。</p>
+    <div class="highlight blue">
+      <strong>🔑 与「历史脚手架」的呼应</strong>
+      论文拆掉了脚手架，只给你成品；本系列把脚手架一根根装回去，让你重新经历一次「被逼出答案」的过程。
+    </div>
+  </div>
+
+  <h3 class="sub">🧮 七、先修知识</h3>
+  <div class="card">
+    <p>最后，UP 主列出了学这个系列需要的前置基础。门槛不高，但每一块都要「有一点」：</p>
+    <div class="img-block">
+      <img src="assets/fig-04.jpg" alt="视频板书：先修知识清单">
+      <div class="cap">🖼 图 4：先修知识。数学、动态规划、最优化、深度学习四类基础，外加函数空间/高维空间/复杂动力系统。</div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>类别</th><th>具体要求</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>数学基础</td><td>会微积分、线性代数、概率统计</td></tr>
+        <tr><td>算法</td><td>会动态规划，熟悉常见的动态规划问题</td></tr>
+        <tr><td>最优化</td><td>有一点最优化知识：求 <code>min f(x)</code>，知道梯度下降法</td></tr>
+        <tr><td>深度学习</td><td>有一点基础，知道泛化、拟合、过拟合、感知机、自回归</td></tr>
+        <tr><td>进阶视角</td><td>函数空间、高维空间、复杂动力系统（板书以绿色标出，属于加分项）</td></tr>
+      </tbody>
+    </table>
+    <div class="highlight orange">
+      <strong>⚠️ 对照自查</strong>
+      如果「感知机」「自回归」「梯度下降」三个词里有一个完全没听过，建议先补这一小块再开始第 2 讲。
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📌</span> 一页速查</h2>
+    <p>第 1 讲全部结论，可独立使用</p>
+  </div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>问题</th><th>结论</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Transformer 的地位？</td><td>最成功的模型（开篇即定调）</td></tr>
+        <tr><td>论文为什么难懂？</td><td>不是它本身晦涩，而是它是最后一个完成品，论文把历史脚手架拆得一干二净</td></tr>
+        <tr><td>本系列的做法？</td><td>不是「教学」，而是「破解」：破解思路，还原历史脚手架</td></tr>
+        <tr><td>要破除哪两个误区？</td><td>① 复杂的函数拟合器 ② 黑箱、无法理解、无法解释</td></tr>
+        <tr><td>现有教程的问题？</td><td>吴恩达/李宏毅/李沐太早过时；多数是二道贩子；3Blue1Brown 等零碎不系统</td></tr>
+        <tr><td>目标是什么？</td><td>写出青出于蓝的作品</td></tr>
+        <tr><td>从哪讲起？</td><td>机器翻译的源头（Transformer 用于机器翻译）</td></tr>
+        <tr><td>四个阶段？</td><td>规则系统 → 统计语言 → 端到端的起点 → 从 RNN 到 Transformer</td></tr>
+        <tr><td>什么不讲？</td><td>词嵌入（3Blue1Brown 已讲），其余全讲且深入讲解</td></tr>
+        <tr><td>核心教学理念？</td><td>不灌输知识，让你自然地「自己发明」Transformer；知识是内心长出来的</td></tr>
+        <tr><td>需要什么基础？</td><td>微积分/线代/概统、动态规划、最优化（梯度下降）、一点深度学习</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head">
+    <h2><span class="emoji">📖</span> 术语表</h2>
+    <p>本讲出现的关键概念</p>
+  </div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>术语</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>历史脚手架</strong></td><td>本系列的核心比喻。指论文成文之前的探索路径与中间产物。论文作为「完成品」把这些全拆掉了，导致读者只看到结果、看不到动机。</td></tr>
+        <tr><td><strong>Attention is all you need</strong></td><td>提出 Transformer 的论文（2017，Google）。标题即主张：只要注意力机制就够了，不需要循环或卷积。</td></tr>
+        <tr><td><strong>规则系统</strong></td><td>阶段一。在统计方法普及前，用人工编写的语法/转换规则做机器翻译，是这条技术史的起点。</td></tr>
+        <tr><td><strong>统计语言</strong></td><td>阶段二。用概率（而非规则）给语言建模，是语言模型思想的源头。</td></tr>
+        <tr><td><strong>端到端</strong></td><td>阶段三。不再手工设计特征与中间步骤，让模型直接从输入学到输出。</td></tr>
+        <tr><td><strong>RNN</strong></td><td>循环神经网络。按时间步逐个处理序列，是 Transformer 之前的序列建模主流方案。</td></tr>
+        <tr><td><strong>自注意力</strong></td><td>Self-Attention。序列内部每个位置与所有位置互相计算相关性，从而聚合全局信息。</td></tr>
+        <tr><td><strong>多头注意力</strong></td><td>Multi-Head Attention。并行多组注意力，从不同子空间捕捉不同的关系模式。</td></tr>
+        <tr><td><strong>多头因果注意力</strong></td><td>板书用词，对应论文的 Masked Multi-Head Attention。位于 decoder 第一层，屏蔽未来位置，保证生成时不能「偷看」后面的词。</td></tr>
+        <tr><td><strong>Add &amp; Norm</strong></td><td>残差连接（Add）加层归一化（Norm）。架构图中每个子层之后都接一次，用于稳定深层网络的训练。</td></tr>
+        <tr><td><strong>前馈网络</strong></td><td>Feed-Forward Network。注意力子层之后的逐位置全连接网络。</td></tr>
+        <tr><td><strong>位置编码</strong></td><td>Positional Encoding。注意力本身不含顺序信息，需把位置信息加到词嵌入上（图中以 ⊕ 表示相加）。</td></tr>
+        <tr><td><strong>词嵌入</strong></td><td>Word Embedding。把 token 映射为向量。本系列明确<strong>不讲</strong>这一块。</td></tr>
+        <tr><td><strong>自回归</strong></td><td>Autoregressive。用已生成的内容预测下一个 token，decoder 的生成方式即属此类。</td></tr>
+        <tr><td><strong>感知机</strong></td><td>Perceptron。最基础的神经网络单元，属于先修知识中的深度学习部分。</td></tr>
+        <tr><td><strong>过拟合 / 泛化</strong></td><td>过拟合指模型记住了训练数据而失去推广能力；泛化指在未见数据上的表现。先修知识要求「知道」即可。</td></tr>
+        <tr><td><strong>函数空间 / 高维空间 / 复杂动力系统</strong></td><td>板书最后以绿色标出的进阶视角，属于理解深度学习的更高层框架，非硬性要求。</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
 <footer>
-  <p>
-    视频来源：<a href="https://space.bilibili.com/287989852" target="_blank">忠厚老实的老王</a> · 
-    笔记整理：<a href="https://github.com/ytwangdongsheng/knowledge-hub" target="_blank">knowledge-hub</a>
-  </p>
-  <p style="margin-top: 8px;">
-    <a href="https://ytwangdongsheng.github.io/knowledge-hub/">← 返回首页</a>
-  </p>
+  <p>🎬 本笔记根据视频内容整理 · 配图截取自视频原片</p>
+  <p>原始视频：<a href="https://www.bilibili.com/video/BV1pRWRzqEVf" target="_blank" rel="noopener">B站 BV1pRWRzqEVf</a> ·《破解transformer第一讲 开篇》· UP主：<a href="https://space.bilibili.com/287989852" target="_blank" rel="noopener">忠厚老实的老王</a></p>
+  <p><a href="../">← 返回知识库首页</a></p>
 </footer>
 
 </body>

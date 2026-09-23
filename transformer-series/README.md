@@ -1,38 +1,63 @@
-# Transformer 系列
+# 破解 Transformer 系列
 
-系统性学习 Transformer 架构：从 Self-Attention 原理、位置编码、多头注意力，到 Encoder-Decoder 结构与实战应用。
+《破解 transformer》视频系列图文笔记 —— **不是「教学」，而是「破解」：还原被论文拆掉的历史脚手架。**
+
+## 为什么是「破解」而不是「教学」
+
+UP 主的开篇论证：
+
+> Transformer 是最成功的模型，但论文《Attention is all you need》难以理解。
+> 原因不是 Transformer 本身晦涩，而是**它是最后一个完成品、集大成者**，论文把历史脚手架拆得一干二净，只留下了完好的成品。
+
+所以本系列不复述成品，而是沿着机器翻译的真实演进史，把脚手架一根根装回去 —— 目标是让你**自然而然地「自己发明」Transformer**。
 
 ## 视频来源
 
 - **UP 主**：[忠厚老实的老王](https://space.bilibili.com/287989852)
-- **系列链接**：[破解 Transformer](https://www.bilibili.com/video/BV1pRWRzqEVf)
-- **标签**：人工智能、教学、Transformer
+- **系列链接**：[破解transformer第一讲 开篇](https://www.bilibili.com/video/BV1pRWRzqEVf)（BV1pRWRzqEVf）
+- **标签**：人工智能、教学、transformer
 
 ## 系列结构
 
-| 期数 | 标题 | 状态 |
+系列主线为四个阶段（除词嵌入不讲外，其余全讲且深入讲解）：
+
+| 阶段 | 主题 | 状态 |
 |------|------|------|
-| 第 1 讲 | 开篇：为什么需要 Transformer | ✅ 已完成 |
-| 第 2 讲 | Self-Attention 详解 | 🔜 即将更新 |
-| 第 3 讲 | 多头注意力与位置编码 | 🔜 即将更新 |
-| 第 4 讲 | Encoder-Decoder 结构 | 🔜 即将更新 |
-| 第 5 讲 | 实战：从零实现 Transformer | 🔜 即将更新 |
+| 第 1 讲 | 开篇：论文难懂，是因为「历史脚手架」被拆光了 | ✅ 已完成 |
+| 第 2 讲 | 规则系统 | 🔜 待更新 |
+| 第 3 讲 | 统计语言 | 🔜 待更新 |
+| 第 4 讲 | 端到端的起点 | 🔜 待更新 |
+| 第 5 讲 | 从 RNN 到 Transformer | 🔜 待更新 |
+
+## 第 1 讲要点
+
+1. **难懂的归因** —— 不是模型晦涩，而是论文作为完成品拆掉了历史脚手架
+2. **两个要破除的误区** —— ① 复杂的函数拟合器 ② 黑箱、无法理解、无法解释
+3. **现有教程的不足** —— 吴恩达/李宏毅/李沐太早过时；多数是二道贩子；3Blue1Brown 等零碎不系统
+4. **先看终点** —— 开篇即手绘完整 Encoder-Decoder 架构图
+5. **内容规划** —— 规则系统 → 统计语言 → 端到端的起点 → RNN 到 Transformer
+6. **教学理念** —— 不灌输知识，让知识从内心长出来
+7. **先修知识** —— 微积分/线代/概统、动态规划、最优化、一点深度学习
 
 ## 文件说明
 
 ```
 transformer-series/
 ├── README.md          # 本文件：系列说明
-├── index.html         # 单页合集：所有期按顺序排列
-└── ep01-frames/       # 第一期视频关键帧（分析用）
+├── index.html         # 单页合集：所有期按顺序纵向排列
+└── assets/            # 配图（视频关键帧截图）
+    ├── fig-01.jpg     # 开篇核心论证
+    ├── fig-02.jpg     # 完整架构图（手绘）
+    ├── fig-03.jpg     # 内容规划
+    └── fig-04.jpg     # 先修知识
 ```
 
 ## 笔记格式
 
-遵循 [STYLE.md](../STYLE.md) Template B v3 规范，CSS 与参考实装 `token-embedding/index.html` 保持一致。
+遵循 [STYLE.md](../STYLE.md) Template B v3 规范，`<style>` 块与参考实装 `token-embedding/index.html` **逐字节一致**（由 `verify_style_spec.py` 校验）。视频播放器容器使用内联样式，未新增 CSS 类名。
 
 ## 版权说明
 
 - 视频版权归原作者（忠厚老实的老王）所有
-- 笔记为学习整理，仅供个人学习参考
-- 如需引用请注明出处
+- 配图截取自视频原片，仅用于学习笔记中的知识点对应说明
+- 文中「现有教程的不足」一节为 UP 主在视频中的主观评价，笔记如实转述，不代表本笔记立场

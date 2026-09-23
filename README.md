@@ -21,7 +21,7 @@
 | **Harness Engineering 到底是什么？** | 概念演进、OpenAI/Anthropic 实战案例、争议讨论：过渡期的关键技术 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/harness-engineering/) |
 | **Agent 的概念、原理与构建模式** | 从零打造一个简化版 Claude Code：能力边界 → 工具 → ReAct → 系统提示词 → 手写 Agent 主循环 → Plan & Execute（[原始 PDF](https://ytwangdongsheng.github.io/knowledge-hub/agent-from-scratch/original/agent-concepts-and-building-patterns.pdf)） | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/agent-from-scratch/) |
 | **Claude Code Skill 完全指南** | 手把手教你在 Claude Code 中安装和使用 Skill 技能：概念、安装、创建、触发、管理、生态（[原始 PDF](https://ytwangdongsheng.github.io/knowledge-hub/claude-code-skill-guide/original/claude-code-skill-guide.pdf)） | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/claude-code-skill-guide/) |
-| **破解 Transformer 系列** | 系统性学习 Transformer 架构：Self-Attention、位置编码、多头注意力、Encoder-Decoder、实战应用（视频系列配套笔记） | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/transformer-series/) |
+| **破解 Transformer 系列** | 不是「教学」而是「破解」：还原被论文拆掉的历史脚手架 —— 从机器翻译源头讲起，规则系统 → 统计语言 → 端到端 → RNN 到 Transformer（视频系列配套笔记） | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/transformer-series/) |
 
 > 更多主题持续补充中。
 
