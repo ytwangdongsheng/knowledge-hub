@@ -2,6 +2,8 @@
 
 《破解 transformer》视频系列图文笔记 —— **不是「教学」，而是「破解」：还原被论文拆掉的历史脚手架。**
 
+> 📚 **在线阅读**：<https://ytwangdongsheng.github.io/knowledge-hub/transformer-series/>
+
 ## 为什么是「破解」而不是「教学」
 
 UP 主的开篇论证：
@@ -14,20 +16,18 @@ UP 主的开篇论证：
 ## 视频来源
 
 - **UP 主**：[忠厚老实的老王](https://space.bilibili.com/287989852)
-- **第 1 讲**：[破解transformer第一讲 开篇](https://www.bilibili.com/video/BV1pRWRzqEVf)（BV1pRWRzqEVf，约 15 分钟）
-- **第 2 讲**：[破解transformer第二讲 规则系统](https://www.bilibili.com/video/BV19zshzWEkr)（BV19zshzWEkr，约 10 分钟）
+- **标签**：人工智能、教学、transformer
+- **主线**：Transformer 用于机器翻译，从机器翻译的源头讲起；除词嵌入不讲（3Blue1Brown 已讲）外全讲
 
-## 系列结构
+## 讲次目录
 
-系列主线为四个阶段（除词嵌入不讲外，其余全讲且深入讲解）：
-
-| 期数 | 标题 | 状态 |
-|------|------|------|
-| 第 1 讲 | 开篇：论文难懂，是因为「历史脚手架」被拆光了 | ✅ 已完成 |
-| 第 2 讲 | 规则系统为什么失败：语言不是被规则推演出来的 | ✅ 已完成 |
-| 第 3 讲 | 统计语言学 | 🔜 待更新 |
-| 第 4 讲 | 端到端的起点 | 🔜 待更新 |
-| 第 5 讲 | 从 RNN 到 Transformer | 🔜 待更新 |
+| 讲次 | 标题 | 时长 | 状态 | 笔记 |
+|------|------|------|------|------|
+| 第 1 讲 | 开篇：论文难懂，是因为「历史脚手架」被拆光了 | 约 15 分钟 | ✅ 已发布 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/transformer-series/01-开篇/) · [视频](https://www.bilibili.com/video/BV1pRWRzqEVf) |
+| 第 2 讲 | 规则系统为什么失败：语言不是被规则推演出来的 | 约 10 分钟 | ✅ 已发布 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/transformer-series/02-规则系统/) · [视频](https://www.bilibili.com/video/BV19zshzWEkr) |
+| 第 3 讲 | 统计语言学 | — | 🔜 待更新 | — |
+| 第 4 讲 | 端到端的起点 | — | 🔜 待更新 | — |
+| 第 5 讲 | 从 RNN 到 Transformer | — | 🔜 待更新 | — |
 
 ## 各讲要点
 
@@ -54,32 +54,34 @@ UP 主的开篇论证：
 
 ## 文件说明
 
+本主题采用 [STYLE.md](../STYLE.md) §2.1 的**多页系列**结构：一个目录页 + 每讲一个自包含子页。
+
 ```
 transformer-series/
-├── README.md          # 本文件：系列说明
-├── index.html         # 单页合集：所有期按顺序纵向排列
-└── assets/            # 配图（视频关键帧截图）
-    ├── fig-01.jpg     # 第1讲：开篇核心论证
-    ├── fig-02.jpg     # 第1讲：完整架构图（手绘）
-    ├── fig-03.jpg     # 第1讲：内容规划
-    ├── fig-04.jpg     # 第1讲：先修知识
-    ├── fig-05.jpg     # 第2讲：鸟飞派与 Georgetown-IBM 实验
-    ├── fig-06.jpg     # 第2讲：编译器类比与两条流程
-    ├── fig-07.jpg     # 第2讲：句法分析的三个困境
-    ├── fig-08.jpg     # 第2讲：语义分析失败与 Minsky 句子对
-    └── fig-09.jpg     # 第2讲：本质反思（世界决定语言）
+├── README.md              # 本文件：系列说明
+├── index.html             # 目录页：系列简介 + 讲次目录 + 路线图
+├── 01-开篇/
+│   ├── index.html         # 第 1 讲正文
+│   └── assets/            # fig-01 ~ fig-04
+└── 02-规则系统/
+    ├── index.html         # 第 2 讲正文
+    └── assets/            # fig-01 ~ fig-05
 ```
 
 ## 笔记格式
 
-遵循 [STYLE.md](../STYLE.md) Template B v3 规范，`<style>` 块与参考实装 `token-embedding/index.html` **逐字节一致**（由 `verify_style_spec.py` 校验）。视频播放器容器使用内联样式，未新增 CSS 类名。
+- 每页的 `<style>` 块与参考实装 `token-embedding/index.html` **逐字节一致**（`verify_style_spec.py` 校验）
+- 未新增 CSS 类名：视频播放器容器用内联样式，困境列表用 `.layers`，对比用 `.compare`，路线图用 `.flow`
+- 每讲自包含：各有 `30 秒总览`、`一页速查`、`术语表`，术语只收本讲概念
 
 ## 制作说明
 
-配图由「稳定帧检测」自动选取：先每 5 秒抽帧，再找出「书写停顿」的稳定帧（手写板书写完一屏后会停顿，此时相邻帧几乎相同），从而取到每一屏板书最完整的版本，而不是机械等间隔抽帧。
+配图由「稳定帧检测」自动选取：先把视频每 5 秒抽帧，再找出「书写停顿」的稳定帧（手写板书写完一屏后会停顿，此时相邻帧几乎相同），从而取到每一屏板书最完整的版本，而不是机械等间隔抽帧。
+
+裁图时按 RGB 最大通道判断内容边界 —— 早期用灰度阈值曾把底部的红字当成空白裁掉。
 
 ## 版权说明
 
 - 视频版权归原作者（忠厚老实的老王）所有
 - 配图截取自视频原片，仅用于学习笔记中的知识点对应说明
-- 文中「现有教程的不足」一节为 UP 主在视频中的主观评价，笔记如实转述，不代表本笔记立场
+- 第 1 讲中「现有教程的不足」一节为 UP 主在视频中的主观评价，笔记如实转述，不代表本笔记立场

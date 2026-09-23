@@ -83,9 +83,11 @@ knowledge-hub/
 │   ├── README.md        # 主题说明
 │   ├── index.html       # 图文笔记正文
 │   └── original/        # 原始文档（PDF 原文，可从笔记页直接点击打开）
-├── transformer-series/  # 主题：破解 Transformer 系列（视频配套笔记）
-│   ├── README.md        # 主题说明
-│   └── index.html       # 单页合集（所有期按顺序排列）
+├── transformer-series/  # 主题：破解 Transformer 系列（视频配套笔记，多页系列）
+│   ├── README.md        # 系列说明
+│   ├── index.html       # 系列目录页（讲次目录 + 路线图）
+│   ├── 01-开篇/         # 第 1 讲（自包含：index.html + assets/）
+│   └── 02-规则系统/     # 第 2 讲（自包含：index.html + assets/）
 └── <主题名>/            # 后续主题按同样结构新增
     ├── README.md
     ├── index.html
