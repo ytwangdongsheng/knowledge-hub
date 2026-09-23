@@ -20,6 +20,7 @@
 | **Context Engineering 深度解析** | 上下文工程：Context 与 Context Window、三大现实问题、四类实现方法 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/context-engineering/) |
 | **Harness Engineering 到底是什么？** | 概念演进、OpenAI/Anthropic 实战案例、争议讨论：过渡期的关键技术 | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/harness-engineering/) |
 | **Agent 的概念、原理与构建模式** | 从零打造一个简化版 Claude Code：能力边界 → 工具 → ReAct → 系统提示词 → 手写 Agent 主循环 → Plan & Execute（[原始 PDF](https://ytwangdongsheng.github.io/knowledge-hub/agent-from-scratch/original/agent-concepts-and-building-patterns.pdf)） | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/agent-from-scratch/) |
+| **Claude Code Skill 完全指南** | 手把手教你在 Claude Code 中安装和使用 Skill 技能：概念、安装、创建、触发、管理、生态（[原始 PDF](https://ytwangdongsheng.github.io/knowledge-hub/claude-code-skill-guide/original/claude-code-skill-guide.pdf)） | [阅读](https://ytwangdongsheng.github.io/knowledge-hub/claude-code-skill-guide/) |
 
 > 更多主题持续补充中。
 
@@ -76,6 +77,10 @@ knowledge-hub/
 │   ├── README.md        # 主题说明
 │   ├── index.html       # 图文笔记正文
 │   ├── assets/          # 配图
+│   └── original/        # 原始文档（PDF 原文，可从笔记页直接点击打开）
+├── claude-code-skill-guide/  # 主题：Claude Code Skill 完全指南
+│   ├── README.md        # 主题说明
+│   ├── index.html       # 图文笔记正文
 │   └── original/        # 原始文档（PDF 原文，可从笔记页直接点击打开）
 └── <主题名>/            # 后续主题按同样结构新增
     ├── README.md

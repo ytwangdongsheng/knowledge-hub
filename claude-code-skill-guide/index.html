@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code Skill 完全指南 — 图文学习笔记</title>
+<meta name="description" content="手把手教你在 Claude Code 中安装和使用 Skill 技能：从概念到实战，涵盖安装、创建、触发、管理和生态。">
+<style>
+  :root {
+    --bg: #fafaf7;
+    --card: #ffffff;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --orange: #d97706;
+    --orange-light: #fef3c7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --purple: #7c3aed;
+    --purple-light: #ede9fe;
+    --text: #1f2937;
+    --text-dim: #6b7280;
+    --text-dimmer: #9ca3af;
+    --border: #e5e7eb;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+    color: white;
+    padding: 60px 24px 50px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: clamp(26px, 4.6vw, 40px);
+    font-weight: 800;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+  .hero p {
+    font-size: clamp(15px, 2.5vw, 18px);
+    opacity: 0.9;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .hero .meta {
+    margin-top: 20px;
+    font-size: 14px;
+    opacity: 0.75;
+  }
+
+  /* Layout */
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
+  section { padding: 48px 0; }
+  section + section { border-top: 1px solid var(--border); }
+
+  /* Section headers */
+  .sec-head { margin-bottom: 28px; }
+  .sec-head h2 {
+    font-size: clamp(22px, 4vw, 28px);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .sec-head h2 .emoji { font-size: 1.2em; }
+  .sec-head p { color: var(--text-dim); font-size: 15px; }
+
+  /* Sub heading */
+  h3.sub {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 26px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card p, .card li { font-size: 15px; color: var(--text); }
+  .card p + p { margin-top: 10px; }
+  .card ul, .card ol { padding-left: 22px; margin-top: 10px; }
+  .card li + li { margin-top: 6px; }
+
+  /* Highlight boxes */
+  .highlight {
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin: 16px 0;
+  }
+  .highlight.blue { background: var(--accent-light); border-left: 4px solid var(--accent); }
+  .highlight.green { background: var(--green-light); border-left: 4px solid var(--green); }
+  .highlight.orange { background: var(--orange-light); border-left: 4px solid var(--orange); }
+  .highlight.red { background: var(--red-light); border-left: 4px solid var(--red); }
+  .highlight.purple { background: var(--purple-light); border-left: 4px solid var(--purple); }
+  .highlight > strong:first-child { display: block; margin-bottom: 6px; }
+  .highlight ul { margin-top: 6px; }
+
+  /* Code blocks */
+  pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px;
+    line-height: 1.7;
+    margin: 16px 0;
+  }
+  pre code { color: inherit; background: none; padding: 0; }
+  code {
+    background: #f1f5f9;
+    color: #db2777;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+  }
+
+  /* Images */
+  .img-block {
+    margin: 20px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    background: #fff;
+  }
+  .img-block img {
+    width: 100%;
+    display: block;
+  }
+  .img-block .cap {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-dim);
+    background: #f9fafb;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    margin: 24px 0;
+  }
+  .flow-item {
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 14px 20px;
+    text-align: center;
+    min-width: 110px;
+    box-shadow: var(--shadow);
+  }
+  .flow-item .num {
+    display: inline-block;
+    width: 28px; height: 28px;
+    line-height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .flow-item .label {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .flow-item .sub-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--text-dimmer);
+    font-size: 20px;
+  }
+
+  /* Overview grid */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 18px 0;
+  }
+  .overview-item {
+    background: var(--accent-light);
+    border-radius: 12px;
+    padding: 16px 18px;
+    border-left: 4px solid var(--accent);
+  }
+  .overview-item .label {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.4px;
+  }
+  .overview-item .value {
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  /* Layers */
+  .layers { margin: 22px 0; }
+  .layer {
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    border-left: 5px solid;
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+  .layer.l1 { border-left-color: #f59e0b; }
+  .layer.l2 { border-left-color: var(--accent); }
+  .layer.l3 { border-left-color: var(--green); }
+  .layer .layer-title {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .layer .pill {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: var(--text-dim);
+  }
+  .layer p { font-size: 14.5px; color: var(--text-dim); }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+  tr:hover td { background: #fafafa; }
+
+  /* Two column compare */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .compare .col {
+    border-radius: 12px;
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    background: var(--card);
+  }
+  .compare .col h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .compare .col.left { border-top: 3px solid var(--purple); }
+  .compare .col.right { border-top: 3px solid var(--green); }
+  .compare .col ul { padding-left: 20px; }
+  .compare .col li { font-size: 14px; margin-bottom: 5px; }
+
+  /* Timeline */
+  .timeline { position: relative; margin: 22px 0; padding-left: 26px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 5px; top: 6px; bottom: 6px;
+    width: 2px;
+    background: var(--border);
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -26px; top: 9px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+  }
+  .timeline-item .t-time {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .timeline-item .t-title { font-size: 15px; font-weight: 600; }
+  .timeline-item .t-desc { font-size: 14px; color: var(--text-dim); }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--text-dimmer);
+    font-size: 13px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer p + p { margin-top: 6px; }
+
+  @media (max-width: 640px) {
+    .hero { padding: 40px 16px 36px; }
+    section { padding: 32px 0; }
+    .card { padding: 18px; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .compare { grid-template-columns: 1fr; }
+    .overview-grid { grid-template-columns: 1fr; }
+    pre { font-size: 12.5px; padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>🧩 Claude Code Skill 完全指南</h1>
+  <p>手把手教你在 Claude Code 中安装和使用 Skill 技能 —— 从概念到实战，涵盖安装、创建、触发、管理和生态</p>
+  <div class="meta">来源：@我是阿众 · PDF 原文 32 页 · 2026 年 4 月</div>
+</div>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">⚡</span> 30 秒总览</h2><p>不读全文，也能知道这篇讲了什么</p></div>
+  <div class="card">
+    <div class="highlight blue"><strong>🎯 核心问题</strong>Claude Code 是个通用 AI 助手，但怎么让它变成某个领域的专业助手？怎么把一套工作规范固化下来，让每次对话都自动遵循？答案是：<strong>Skill（技能）</strong>。</div>
+    <p>Skill 是 Anthropic 于 2025 年 10 月为 Claude Code 发布的扩展能力，本质是一套<strong>可复用的指令模板</strong>。写好一次，每次对话都能用；别人写好的，装上就能用。</p>
+    <div class="overview-grid">
+      <div class="overview-item"><div class="label">Skill 是什么</div><div class="value">包含 SKILL.md 的目录，定义"怎么做"</div></div>
+      <div class="overview-item"><div class="label">核心特点</div><div class="value">可复用 · 可分享 · 自动触发</div></div>
+      <div class="overview-item"><div class="label">与 MCP 的关系</div><div class="value">Skill 定义流程，MCP 定义连接</div></div>
+      <div class="overview-item"><div class="label">触发方式</div><div class="value">自动匹配（description）+ 手动斜杠命令</div></div>
+    </div>
+    <div class="highlight green"><strong>✅ 全文主线</strong>概念（Skill 是什么）→ 安装（放在哪、怎么装）→ 创建（SKILL.md 怎么写）→ 触发（自动 vs 手动）→ 管理（查看、停用、优先级）→ 生态（去哪找更多 Skill）→ 附录（字段参考、命令速查、FAQ）。</div>
+    <div class="highlight purple"><strong>📄 原始文档</strong>本页是 PDF 原文《Claude Code Skill 完全指南》的二次整理笔记，原文共 32 页，作者 @我是阿众。<a href="original/claude-code-skill-guide.pdf" target="_blank" rel="noopener">点击查看原始文档（PDF）→</a></div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">📖</span> 一、Skill 是什么</h2><p>把 Claude Code 从通用助手变成领域专家</p></div>
+  <div class="card">
+    <p>Skill（技能）是 Anthropic 于 <strong>2025 年 10 月 16 日</strong> 为 Claude Code 正式发布的功能，随后于 12 月 18 日，Agent Skills 规范作为开放标准发布在 agentskills.io，目前已有 <strong>30+ 平台</strong>采纳支持。</p>
+    <div class="highlight blue"><strong>📌 核心定义</strong>Skill 的本质非常简单：<strong>一个包含 SKILL.md 文件的目录，就是一个 Skill</strong>。</div>
+    <p>SKILL.md 文件由两部分组成：</p>
+    <table>
+      <tr><th>组成部分</th><th>内容</th><th>作用</th></tr>
+      <tr><td><strong>YAML Frontmatter</strong></td><td>被 <code>---</code> 包裹的元数据</td><td>定义 Skill 的名称、描述、触发条件、可用工具等</td></tr>
+      <tr><td><strong>Markdown 正文</strong></td><td>指令和模板内容</td><td>告诉 Claude 在 Skill 激活时应该做什么、怎么做</td></tr>
+    </table>
+    <p>用大白话说：Skill 就是你提前写好的"工作说明书"，告诉 Claude Code 在特定场景下如何更好地帮你完成任务。比如：</p>
+    <ul>
+      <li>你可以写一个<strong>代码审查 Skill</strong>，让 Claude 每次审查代码时都按照统一的标准和格式</li>
+      <li>你可以写一个 <strong>Git 提交 Skill</strong>，让 Claude 帮你生成规范化的 commit message</li>
+      <li>你可以写一个<strong>技术文档 Skill</strong>，让 Claude 帮你按照团队规范编写 API 文档</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 class="sub">Skill 是如何工作的？</h3>
+    <p>当你与 Claude Code 对话时，系统会检查当前可用的所有 Skill（根据目录层级确定），并读取每个 Skill 的 <code>description</code> 字段。如果你输入的内容与某个 Skill 的描述高度匹配，Claude Code 就会<strong>自动激活该 Skill</strong>，将 SKILL.md 中的指令注入到当前的对话上下文中，从而按照你预定义的规范来响应。</p>
+    <p>这个过程对用户是完全透明的——你只需要正常使用 Claude Code，合适的 Skill 会在恰当的时机自动生效。</p>
+    <div class="highlight green"><strong>✅ 核心原则</strong>写好一次，每次对话都能用；别人写好的，装上就能用。</div>
+  </div>
+  <div class="card">
+    <h3 class="sub">Skill 的核心特点</h3>
+    <p>Skill 功能之所以强大，源于三个核心设计特点：</p>
+    <div class="layers">
+      <div class="layer l1">
+        <div class="layer-title">🔄 可复用（Write Once, Use Everywhere）</div>
+        <p>写好一个 Skill 之后，每次与 Claude Code 对话时都可以使用它，不需要每次都重复输入冗长的指令。比如你有一个写单元测试的 Skill，一旦配置好，任何时候你说"帮我写测试"，Claude 都会自动按照你定义的模板和规范来生成。</p>
+      </div>
+      <div class="layer l2">
+        <div class="layer-title">🔗 可分享（Share & Reuse）</div>
+        <p>Skill 本质上是文本文件（SKILL.md），可以很方便地：通过 Git 仓库分享给团队成员、发布到 GitHub 上供社区使用、通过插件市场一键安装。你不需要从零开始——社区已经有大量现成可用的 Skill。</p>
+      </div>
+      <div class="layer l3">
+        <div class="layer-title">⚡ 自动触发（Auto-match & Manual Trigger）</div>
+        <p>Skill 有两种激活方式：<strong>自动触发</strong>（Claude Code 根据你的输入内容自动判断哪个 Skill 最合适）和<strong>手动触发</strong>（通过斜杠命令如 <code>/commit-msg</code> 主动激活）。判断依据是 SKILL.md 中 <code>description</code> 字段的内容——描述越准确，自动匹配率越高。</p>
+      </div>
+    </div>
+    <div class="highlight purple"><strong>💡 小贴士</strong><code>description</code> 字段是自动触发的灵魂，建议认真填写。前 <strong>1536 个字符</strong>会被系统读取，超出部分会被截断，所以要在这有限的篇幅内描述清楚 Skill 的适用场景。</div>
+  </div>
+  <div class="card">
+    <h3 class="sub">Skill 与 Plugin、MCP 的区别</h3>
+    <p>初学者最容易混淆的三个概念是 Skill、Plugin 和 MCP。下面是清晰的对比：</p>
+    <div class="compare">
+      <div class="col left">
+        <h4>🧩 Skill vs Plugin</h4>
+        <table>
+          <tr><th>维度</th><th>Skill（技能）</th><th>Plugin（插件）</th></tr>
+          <tr><td><strong>本质</strong></td><td>能力模块</td><td>容器/集合</td></tr>
+          <tr><td><strong>结构</strong></td><td>一个目录，核心是 SKILL.md</td><td>一个目录，核心是 plugin.json</td></tr>
+          <tr><td><strong>内容</strong></td><td>SKILL.md + 可选的 scripts/、references/、assets/ 等</td><td>多个 Skill + hooks + agents + MCP servers</td></tr>
+          <tr><td><strong>安装单位</strong></td><td>单个 Skill</td><td>整个 Plugin（含多个组件）</td></tr>
+          <tr><td><strong>使用方式</strong></td><td>安装后自动或手动触发</td><td>安装后内部所有 Skill 同时生效</td></tr>
+        </table>
+        <p style="margin-top: 12px;"><strong>简单类比</strong>：Skill 像是一把螺丝刀（单一工具），Plugin 像是一个工具箱（包含螺丝刀、锤子、钳子等一整套工具）。安装一个 Plugin，等于一次性安装了其中包含的多个 Skill 和其他组件。</p>
+      </div>
+      <div class="col right">
+        <h4>🌐 Skill vs MCP</h4>
+        <table>
+          <tr><th>维度</th><th>Skill</th><th>MCP</th></tr>
+          <tr><td><strong>定位</strong></td><td>流程层/知识层</td><td>外部连接层</td></tr>
+          <tr><td><strong>作用</strong></td><td>定义"怎么做"（工作流程、规范、模板）</td><td>定义"连接什么"（外部数据源、工具、API）</td></tr>
+          <tr><td><strong>示例</strong></td><td>代码审查规范、提交信息模板、文档格式</td><td>连接数据库、读取文件系统、调用外部 API</td></tr>
+        </table>
+        <p style="margin-top: 12px;"><strong>两者是互补协同的关系</strong>：Skill 告诉 Claude "按什么流程和规范来做事"，MCP 告诉 Claude "可以去哪里获取数据和使用什么外部工具"。在实际项目中，两者经常搭配使用。</p>
+      </div>
+    </div>
+    <div class="highlight orange"><strong>⚠️ 注意事项</strong>不要把 Skill 和 Plugin 混为一谈。Skill 是 Plugin 的组成部分，但 Skill 可以独立存在和使用，而 Plugin 是一个更大的容器概念。</div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">📦</span> 二、怎样安装 Skill</h2><p>Skill 文件应该放在哪里？怎么装别人的？怎么创建自己的？</p></div>
+  <div class="card">
+    <h3 class="sub">2.1 Skill 文件应该放在哪里</h3>
+    <p>Claude Code 支持<strong>四层目录结构</strong>来存放 Skill，每一层对应不同的作用范围和优先级：</p>
+    <table>
+      <tr><th>级别</th><th>存放路径</th><th>作用范围</th><th>适用场景</th></tr>
+      <tr><td><strong>企业级</strong></td><td>托管设置（Managed Settings）</td><td>整个组织</td><td>公司统一规范，全员生效</td></tr>
+      <tr><td><strong>用户级</strong></td><td><code>~/.claude/skills/&lt;skill-name&gt;/SKILL.md</code></td><td>所有项目</td><td>个人常用 Skill，全局可用</td></tr>
+      <tr><td><strong>项目级</strong></td><td><code>.claude/skills/&lt;skill-name&gt;/SKILL.md</code></td><td>当前项目</td><td>项目特定的工作流和规范</td></tr>
+      <tr><td><strong>插件级</strong></td><td><code>&lt;plugin&gt;/skills/&lt;skill-name&gt;/SKILL.md</code></td><td>随插件生效</td><td>安装插件时自动部署</td></tr>
+    </table>
+    <div class="highlight blue"><strong>📌 优先级规则</strong>当同名 Skill 存在于多个层级时，Claude Code 按照以下优先级加载（优先级高的覆盖优先级低的）：<br><strong>企业级（Enterprise） &gt; 用户级（Personal） &gt; 项目级（Project）</strong></div>
+    <p>对于大型单体仓库（Monorepo），Claude Code 还支持嵌套的 <code>.claude/skills/</code> 目录。你可以在子项目目录下也创建 <code>.claude/skills/</code>，这些 Skill 只对所在子项目生效，实现了更精细的权限控制。</p>
+    <pre><code># 用户级 Skill 目录结构
+~/.claude/
+└── skills/
+    ├── commit-msg/
+    │   └── SKILL.md
+    ├── code-review/
+    │   └── SKILL.md
+    └── doc-writing/
+        └── SKILL.md
+
+# 项目级 Skill 目录结构
+my-project/
+├── .claude/
+│   └── skills/
+│       ├── deploy-guide/
+│       │   └── SKILL.md
+│       └── test-template/
+│           └── SKILL.md
+├── src/
+└── package.json</code></pre>
+    <div class="highlight purple"><strong>💡 小贴士</strong>建议将通用型 Skill（如写 commit message、代码审查）放在 <code>~/.claude/skills/</code>（用户级），而将项目专属 Skill（如项目部署流程、团队编码规范）放在项目级的 <code>.claude/skills/</code> 目录下，并通过 Git 版本控制与团队共享。</div>
+  </div>
+  <div class="card">
+    <h3 class="sub">2.2 安装别人的 Skill</h3>
+    <p>当你从 GitHub、同事或社区获取到一个现成的 Skill 时，有三种安装方式可选。</p>
+    <h3 class="sub">方式一：手动复制</h3>
+    <p>最基础的方式，适用于所有 Skill。步骤如下：</p>
+    <ol>
+      <li>获取 Skill 文件夹 — 通过 git clone 或下载 ZIP 包</li>
+      <li>复制到对应目录 — 根据需求选择用户级或项目级路径</li>
+    </ol>
+    <pre><code># 第1步：从 GitHub 克隆 Skill 仓库
+git clone https://github.com/author/skill-name.git
+
+# 第2步：复制到用户级目录（所有项目可用）
+cp -r skill-name ~/.claude/skills/
+
+# 或者复制到项目级目录（仅当前项目可用）
+cp -r skill-name .claude/skills/</code></pre>
+    <p>安装完成后，Skill 立即生效，Claude Code 会根据匹配条件自动调用。</p>
+    <div class="highlight orange"><strong>⚠️ 注意事项</strong>确保复制的是整个 Skill 目录（包含 SKILL.md 的文件夹），而不是只复制 SKILL.md 单个文件。正确的目录结构应该是 <code>~/.claude/skills/my-skill/SKILL.md</code>，而不是 <code>~/.claude/skills/SKILL.md</code>。</div>
+  </div>
+  <div class="card">
+    <h3 class="sub">方式二：用第三方工具一键安装</h3>
+    <p>Vercel Labs 开发了一个便捷的 CLI 工具，可以通过命令行一键安装 Skill。</p>
+    <p><strong>GitHub 仓库</strong>：<a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">https://github.com/vercel-labs/skills</a></p>
+    <pre><code># 基本语法
+npx skills add &lt;github-repo&gt; --skill &lt;skill-name&gt;
+
+# 示例：安装指定 Skill
+npx skills add author/repo-name --skill my-skill
+
+# 全局安装（放入 ~/.claude/skills/）
+npx skills add &lt;github-repo&gt; --skill &lt;skill-name&gt; -g
+
+# 项目级安装（放入 .claude/skills/）
+npx skills add &lt;github-repo&gt; --skill &lt;skill-name&gt;</code></pre>
+    <p>安装过程是交互式的，工具会引导你依次选择：</p>
+    <ol>
+      <li>选择 Agent（如 Claude Code）</li>
+      <li>选择 Scope（全局或项目级）</li>
+      <li>选择安装方式（symlink 软链接 / copy 复制）</li>
+    </ol>
+    <div class="highlight purple"><strong>💡 小贴士</strong>你也可以使用 <code>bunx</code> 或 <code>pnpm dlx</code> 替代 <code>npx</code>，效果相同。</div>
+    <div class="highlight orange"><strong>⚠️ 注意事项</strong>该工具可能存在一个已知问题——有时不会自动创建 symlink（参考 GitHub Issue #851）。如果遇到 Skill 安装后无法触发的情况，可以尝试手动创建软链接：<br><code>ln -s /path/to/source/skill ~/.claude/skills/&lt;skill-name&gt;</code></div>
+  </div>
+  <div class="card">
+    <h3 class="sub">方式三：安装插件</h3>
+    <p>通过 Claude Code 的插件市场安装包含 Skill 的插件，适合安装官方或社区维护的 Skill 集合。</p>
+    <pre><code># 第1步：添加插件市场
+/plugin marketplace add anthropics/skills
+
+# 第2步：安装指定插件（插件名@anthropic-agent-skills）
+/plugin install 插件名@anthropic-agent-skills
+
+# 示例：安装官方文档 Skill 插件
+/plugin install document-skills@anthropic-agent-skills</code></pre>
+    <p>安装完成后，插件内包含的所有 Skill 会自动生效，无需额外配置。</p>
+  </div>
+  <div class="card">
+    <h3 class="sub">2.3 创建自己的 Skill</h3>
+    <p>如果现成的 Skill 无法满足你的需求，你可以轻松创建自己的 Skill。创建 Skill 有三种方式：手动编写、让 Claude Code 帮你生成、或使用 <code>/skill-creator</code>。</p>
+    <h3 class="sub">SKILL.md 文件结构</h3>
+    <p>SKILL.md 是 Skill 的核心文件。一个完整的 Skill 目录通常包含以下结构：</p>
+    <pre><code>my-skill/
+├── SKILL.md           # 核心文件（必需）
+├── template.md        # 模板文件（可选）
+├── examples/          # 示例目录（可选）
+│   └── example1.md
+├── scripts/           # 辅助脚本（可选）
+│   └── helper.sh
+├── references/        # 参考文档（可选）
+│   └── guidelines.md
+└── assets/            # 静态资源（可选）
+    └── diagram.png</code></pre>
+    <p>其中，<strong>只有 SKILL.md 是必需的</strong>，其他文件和目录都是可选的，根据 Skill 的复杂程度决定是否需要。</p>
+  </div>
+  <div class="card">
+    <h3 class="sub">元信息（Frontmatter）详解</h3>
+    <p>Frontmatter 是 SKILL.md 文件顶部被 <code>---</code> 包裹的 YAML 元数据区域，是 Skill 的"配置大脑"。完整支持 <strong>15 个字段</strong>：</p>
+    <table>
+      <tr><th>字段</th><th>必填</th><th>类型</th><th>说明</th></tr>
+      <tr><td><code>name</code></td><td>否</td><td>string</td><td>显示名称，省略则用目录名。小写+数字+连字符，最多 64 字符</td></tr>
+      <tr><td><code>description</code></td><td><strong>推荐</strong></td><td>string</td><td>功能描述，Claude 据此判断何时加载 Skill。前 1536 字有效</td></tr>
+      <tr><td><code>when_to_use</code></td><td>否</td><td>string</td><td>额外触发条件描述，追加到 description 后</td></tr>
+      <tr><td><code>argument-hint</code></td><td>否</td><td>string</td><td>自动补全时显示的参数提示</td></tr>
+      <tr><td><code>arguments</code></td><td>否</td><td>array</td><td>命名位置参数，用于 $name 替换</td></tr>
+      <tr><td><code>disable-model-invocation</code></td><td>否</td><td>boolean</td><td>true = 禁止自动加载，仅手动触发（默认 false）</td></tr>
+      <tr><td><code>user-invocable</code></td><td>否</td><td>boolean</td><td>false = 从 / 菜单隐藏，仅 Claude 能调用（默认 true）</td></tr>
+      <tr><td><code>allowed-tools</code></td><td>否</td><td>array</td><td>Skill 激活时无需确认即可使用的工具列表</td></tr>
+      <tr><td><code>model</code></td><td>否</td><td>string</td><td>Skill 激活时使用的指定模型</td></tr>
+      <tr><td><code>effort</code></td><td>否</td><td>string</td><td>思考力度：low / medium / high / xhigh / max</td></tr>
+      <tr><td><code>context</code></td><td>否</td><td>string</td><td>设置为 fork 在独立 subagent 中运行</td></tr>
+      <tr><td><code>agent</code></td><td>否</td><td>string</td><td>context: fork 时使用的 subagent 类型</td></tr>
+      <tr><td><code>hooks</code></td><td>否</td><td>object</td><td>Skill 生命周期钩子（激活前/后执行的操作）</td></tr>
+      <tr><td><code>paths</code></td><td>否</td><td>array</td><td>Glob 模式，仅当匹配到指定文件时自动激活</td></tr>
+      <tr><td><code>shell</code></td><td>否</td><td>string</td><td>!command 使用的 shell：bash 或 powershell</td></tr>
+    </table>
+    <div class="highlight blue"><strong>📌 最核心的字段：description</strong><code>description</code> 直接决定了自动触发的准确率。建议遵循以下原则：<br>• 明确说明 Skill 的功能<br>• 列举触发场景（"当用户要求 XXX 时使用"）<br>• 使用关键词描述适用领域<br>• 控制在 1536 字符以内（超出部分会被截断）</div>
+    <p><strong>常用字段组合示例</strong>：</p>
+    <pre><code># 对于只希望在特定情况下自动激活的 Skill：
+---
+name: api-doc
+description: 为 REST API 编写接口文档。当用户要求编写 API 文档、接口说明或更新接口定义时使用。
+paths: ["**/openapi.yaml", "**/swagger.json", "**/routes/**"]
+---
+
+# 对于需要额外工具权限的 Skill：
+---
+name: deploy-check
+description: 在部署前执行检查清单。当用户提到部署、上线、release 或 deploy 时使用。
+allowed-tools: ["Bash", "Read", "Glob"]
+effort: high
+---</code></pre>
+  </div>
+  <div class="card">
+    <h3 class="sub">正文编写指南</h3>
+    <p>Frontmatter 之后是 Markdown 正文部分，这里是 Skill 的"灵魂"——告诉 Claude 激活后应该做什么。</p>
+    <p><strong>编写原则</strong>：</p>
+    <ol>
+      <li><strong>指令清晰</strong>：明确告诉 Claude 任务目标、步骤和输出格式</li>
+      <li><strong>格式规范</strong>：使用 Markdown 的标题、列表、代码块来组织内容</li>
+      <li><strong>示例驱动</strong>：提供输入输出示例，让 Claude 理解期望的结果样式</li>
+      <li><strong>约束明确</strong>：指定字数限制、格式要求、风格偏好等约束条件</li>
+      <li><strong>适度长度</strong>：正文不是越长越好，关键是信息密度高、指令无歧义。通常 50-200 行的正文已经足够描述大部分工作流</li>
+      <li><strong>使用变量</strong>：如果定义了 <code>arguments</code> 字段，可以在正文中用 <code>$变量名</code> 引用用户传入的参数</li>
+    </ol>
+    <p><strong>正文结构建议</strong>：</p>
+    <pre><code>---
+# Frontmatter 区域
+---
+# 这里是正文
+## 任务目标
+简要说明这个 Skill 要做什么。
+
+## 操作步骤
+1. 第一步...
+2. 第二步...
+3. 第三步...
+
+## 输出格式
+指定期望的输出格式和结构。
+
+## 示例
+提供1-2个完整的输入/输出示例。</code></pre>
+  </div>
+  <div class="card">
+    <h3 class="sub">实用示例：Git 提交信息 Skill</h3>
+    <p>下面是一个完整的 Git 提交信息 Skill 示例，展示了所有关键元素的实际运用：</p>
+    <pre><code>---
+name: commit-msg
+description: 生成规范的Git提交信息。当用户要求写commit message、git commit、提交信息或提交代码时使用。
+---
+请根据当前的代码变更，生成一条规范的Git提交信息。
+
+## 格式要求
+1. 第一行用类型前缀，如 `feat`、`fix`、`docs`、`style`、`refactor`、`test`、`chore` 等
+2. 简要描述改了什么，不超过 50 个字符
+3. 如果改动较大，在下方补充详细说明，每行不超过 72 个字符
+4. 使用中文描述
+
+## 类型说明
+| 前缀 | 用途 |
+|------|------|
+| feat | 新功能 |
+| fix | Bug修复 |
+| docs | 文档更新 |
+| style | 代码格式调整（不影响功能） |
+| refactor | 代码重构 |
+| test | 测试相关 |
+| chore | 构建/工具链/杂项 |
+
+## 示例
+feat: 添加用户登录功能
+- 实现JWT token认证
+- 添加登录页面表单验证
+- 添加登录状态持久化</code></pre>
+    <p>将这个文件保存为 <code>.claude/skills/commit-msg/SKILL.md</code>（或 <code>~/.claude/skills/commit-msg/SKILL.md</code>），就可以使用了。</p>
+    <div class="highlight purple"><strong>💡 小贴士</strong>在 <code>description</code> 中列举多个触发关键词（如"commit message"、"git commit"、"提交信息"），可以显著提高自动匹配的命中率。</div>
+  </div>
+  <div class="card">
+    <h3 class="sub">让 Claude 帮你创建 Skill</h3>
+    <p>最简单的方式——直接在对话中描述你的需求，让 Claude Code 帮你生成 Skill。</p>
+    <p><strong>对话示例</strong>：</p>
+    <pre><code>用户：帮我创建一个写 Git 提交信息的 Skill
+Claude：好的，我来为你创建一个 commit-msg Skill。
+       我会将它保存到 .claude/skills/commit-msg/SKILL.md</code></pre>
+    <p>Claude 会自动：</p>
+    <ol>
+      <li>分析你的需求</li>
+      <li>编写合适的 Frontmatter（尤其是 <code>description</code>）</li>
+      <li>编写清晰的正文指令</li>
+      <li>将文件保存到正确的位置</li>
+    </ol>
+    <p><strong>提高生成质量的技巧</strong>：</p>
+    <ul>
+      <li><strong>描述要具体</strong>：不要说"帮我写个文档 Skill"，而要说"帮我写一个 Skill，用于生成 REST API 接口文档，要求包含参数说明、返回值示例和错误码表格，使用 Markdown 格式"</li>
+      <li><strong>给出示例</strong>：告诉 Claude 你期望的输出样式，比如"参考我们团队的这种格式..."</li>
+      <li><strong>指定触发条件</strong>：明确告诉 Claude 在什么场景下应该激活这个 Skill</li>
+    </ul>
+    <p><strong>另一种方式：使用 <code>/skill-creator</code></strong></p>
+    <pre><code>/skill-creator</code></pre>
+    <div class="highlight orange"><strong>⚠️ 注意事项</strong><code>/skill-creator</code> 不是 Claude Code 内置命令，需要先通过插件安装。安装方式：<br><code>/plugin install skill-creator@anthropic-agent-skills</code><br>安装完成后，使用 <code>/skill-creator</code> 会进入一个交互式的 Skill 创建流程，引导你逐步完成配置。</div>
+    <div class="highlight purple"><strong>💡 小贴士</strong>即使是让 Claude 帮你创建，也建议在生成后检查一下 <code>description</code> 字段是否准确描述了你的使用场景。可以手动补充一些触发关键词，提高自动匹配的准确率。</div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">⚡</span> 三、怎样触发和使用 Skill</h2><p>自动匹配 + 手动控制，灵活调用</p></div>
+  <div class="card">
+    <h3 class="sub">3.1 自动触发机制</h3>
+    <p>自动触发是 Claude Code Skill 系统最强大的特性之一。Claude 会持续监控对话内容，在适当的时候自动调用相关的 Skill。</p>
+    <p><strong>触发原理</strong>：Claude 的自动触发遵循以下流程：</p>
+    <ol>
+      <li><strong>语义匹配</strong>：Claude 读取所有已安装 Skill 的 <code>description</code> 字段，当用户输入的内容与某个 Skill 的描述匹配时，系统自动触发该 Skill。</li>
+      <li><strong>渐进式加载（Progressive Disclosure）</strong>：为了节省 token，Claude 不会一次性加载所有 Skill 的完整内容，而是采用三级加载策略：</li>
+    </ol>
+    <table>
+      <tr><th>层级</th><th>加载内容</th><th>估算大小</th><th>触发条件</th></tr>
+      <tr><td><strong>Level 1</strong></td><td>Frontmatter（元数据）</td><td>~100 tokens/Skill</td><td>每次对话自动加载</td></tr>
+      <tr><td><strong>Level 2</strong></td><td>SKILL.md 正文</td><td>取决于 Skill 复杂度</td><td>description 匹配时加载</td></tr>
+      <tr><td><strong>Level 3</strong></td><td>链接的附加文件</td><td>取决于文件大小</td><td>实际需要时按需加载</td></tr>
+    </table>
+    <div class="highlight purple"><strong>💡 小贴士</strong>这种渐进式设计可以降低 <strong>60%-70%</strong> 的 token 消耗。如果你的项目安装了 20 个 Skill，按全量加载可能需要数千 tokens，而渐进式加载通常只需要几百 tokens。</div>
+  </div>
+  <div class="card">
+    <h3 class="sub">如何提升自动触发准确率</h3>
+    <p>自动触发的核心在于 <code>description</code> 字段的质量。以下是经过验证的优化建议：</p>
+    <ul>
+      <li><strong>基础版</strong>：清晰的 <code>description</code> —— 触发率约 20%</li>
+      <li><strong>优化版</strong>：详细描述 + 触发场景说明 —— 触发率可提升到 50%+</li>
+      <li><strong>进阶版</strong>：添加 <code>examples</code> 字段提供示例 —— 触发率进一步提升到 72%-90%</li>
+    </ul>
+    <pre><code># 触发率较低的描述
+description: "帮助写代码"
+
+# 触发率较高的描述
+description: "在需要编写符合团队规范的 Git 提交信息时自动触发，支持 Angular 提交规范，能自动生成包含类型、作用域和描述的完整提交信息"
+
+# 触发率最高的描述（含示例）
+description: "在需要编写符合团队规范的 Git 提交信息时自动触发"
+when_to_use: |
+  - 用户说"帮我写提交信息"或"生成 commit message"
+  - 执行 git commit 前需要格式化提交信息
+  - 需要遵循 Conventional Commits 规范时</code></pre>
+    <div class="highlight orange"><strong>⚠️ 注意事项</strong><code>description</code> + <code>when_to_use</code> 的合计文本在 Skill 列表中会被截断至 <strong>1536 个字符</strong>。因此要把最关键的信息放在前面，避免重要内容被截断。</div>
+  </div>
+  <div class="card">
+    <h3 class="sub">3.2 手动触发</h3>
+    <p>当自动触发不够精准，或者你明确知道要使用哪个 Skill 时，可以通过斜杠命令手动触发。</p>
+    <p><strong>基本语法</strong>：在对话输入框中输入 <code>/技能名</code> 即可手动触发对应的 Skill：</p>
+    <pre><code>/commit-msg          # 触发写提交信息的 Skill
+/debug               # 触发调试助手 Skill
+/fix-issue 123       # 触发修复问题的 Skill，并传入参数 123</code></pre>
+    <p><strong>发现可用命令</strong>：按下 <code>/</code> 键会打开命令面板，列出所有可用的 Skill 和内置命令：</p>
+    <pre><code>/                    # 显示所有可用命令列表
+/sk                  # 继续打字可以筛选，比如输入 sk 会显示 skills 相关命令</code></pre>
+    <div class="highlight purple"><strong>💡 小贴士</strong>当你不确定某个 Skill 的准确名称时，先输入 <code>/</code> 查看列表，然后继续打字进行筛选，这比反复尝试猜测名称要高效得多。</div>
+  </div>
+  <div class="card">
+    <h3 class="sub">常用内置斜杠命令</h3>
+    <p>Claude Code 内置了以下常用命令（与 Skill 无关的内置命令）：</p>
+    <table>
+      <tr><th>命令</th><th>说明</th></tr>
+      <tr><td><code>/</code></td><td>列出所有可用命令</td></tr>
+      <tr><td><code>/skills</code></td><td>列出所有已安装的 Skill</td></tr>
+      <tr><td><code>/plugin</code></td><td>打开插件管理界面</td></tr>
+      <tr><td><code>/clear</code></td><td>清除当前对话上下文</td></tr>
+      <tr><td><code>/cost</code></td><td>查看本次会话的 token 消耗和费用</td></tr>
+      <tr><td><code>/help</code></td><td>显示帮助信息</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3 class="sub">3.3 控制触发行为</h3>
+    <p>通过 Frontmatter 中的两个关键字段——<code>disable-model-invocation</code> 和 <code>user-invocable</code>——你可以精细控制 Skill 的触发行为。</p>
+    <table>
+      <tr><th>Frontmatter 配置</th><th>用户可手动触发</th><th>Claude 可自动触发</th><th>description 是否加载</th></tr>
+      <tr><td>默认（无设置）</td><td>是</td><td>是</td><td>是</td></tr>
+      <tr><td><code>disable-model-invocation: true</code></td><td>是</td><td>否</td><td>否</td></tr>
+      <tr><td><code>user-invocable: false</code></td><td>否</td><td>是</td><td>是</td></tr>
+      <tr><td>两者都设置</td><td>否</td><td>否</td><td>否</td></tr>
+    </table>
+    <p><strong>使用场景建议</strong>：</p>
+    <p><strong>场景一：防止自动触发（推荐用于有副作用的操作）</strong></p>
+    <pre><code>---
+name: deploy-to-production
+description: 部署应用到生产环境
+disable-model-invocation: true
+---</code></pre>
+    <p>适合场景：部署代码、提交到主分支、发送邮件、执行数据库迁移等具有实际副作用的操作。这样只有在用户明确手动调用时才会执行。</p>
+    <p><strong>场景二：仅自动触发（推荐用于背景知识型 Skill）</strong></p>
+    <pre><code>---
+name: legacy-system-docs
+description: 公司内部遗留系统的架构说明和 API 规范
+user-invocable: false
+---</code></pre>
+    <p>适合场景：遗留系统文档、API 规范参考、团队编码规范等。这类 Skill 不需要手动调用，Claude 会在相关对话中自动引用它们。</p>
+    <p><strong>场景三：完全禁用</strong></p>
+    <pre><code>---
+name: deprecated-skill
+description: 已废弃的 Skill
+disable-model-invocation: true
+user-invocable: false
+---</code></pre>
+    <p>适合场景：临时禁用某个 Skill（比如发现 bug 或已被替代），无需删除文件即可快速停用。</p>
+    <div class="highlight orange"><strong>⚠️ 注意事项</strong><code>disable-model-invocation: true</code> 不仅阻止自动触发，还会让 <code>description</code> 不被加载到上下文中。这意味着该 Skill 完全不会参与自动匹配过程，从而进一步节省 token。</div>
+  </div>
+  <div class="card">
+    <h3 class="sub">3.4 查看和管理已安装的 Skill</h3>
+    <p><strong>查看所有已安装的 Skill</strong>：</p>
+    <pre><code>/skills              # 专门列出所有已安装的 Skill，显示名称、来源和状态</code></pre>
+    <p>输出示例：</p>
+    <pre><code>已安装 Skills (5):
+  [项目] commit-msg          — Git 提交信息生成器
+  [项目] code-review         — 代码审查助手
+  [用户] caveman             — 极简 token 优化 Skill
+  [插件] document-skills     — 文档处理工具包
+  [用户] react-best-practices — React 最佳实践</code></pre>
+    <table>
+      <tr><th>管理方法</th><th>操作</th><th>说明</th></tr>
+      <tr><td>查看列表</td><td><code>/skills</code> 命令</td><td>显示所有 Skill 及其来源</td></tr>
+      <tr><td>临时停用</td><td>修改 Frontmatter</td><td>添加 <code>disable-model-invocation: true</code> 和/或 <code>user-invocable: false</code></td></tr>
+      <tr><td>删除手动安装的 Skill</td><td>删除文件夹</td><td>直接删除 <code>~/.claude/skills/</code> 或项目 skills/ 目录下的对应文件夹</td></tr>
+      <tr><td>管理插件安装的 Skill</td><td><code>/plugin</code> 命令</td><td>打开图形化插件管理界面</td></tr>
+      <tr><td>更新插件 Skill</td><td><code>/plugin update &lt;插件名&gt;</code></td><td>更新到最新版本</td></tr>
+    </table>
+    <div class="highlight blue"><strong>📌 优先级规则</strong>当多个 Skill 可能同时触发时，Claude 按照以下优先级决定使用顺序：<br><strong>企业级 (Enterprise) &gt; 用户级 (User) &gt; 项目级 (Project) &gt; 插件级 (Plugin)</strong><br>这意味着，如果你同时在用户目录和项目目录安装了同名 Skill，项目级的 Skill 会优先生效。</div>
+    <div class="highlight purple"><strong>💡 小贴士</strong>定期运行 <code>/skills</code> 检查已安装的 Skill 列表，清理不再需要或过时的 Skill，可以有效降低对话的 token 消耗。</div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">🌐</span> 四、去哪找更多 Skill</h2><p>官方市场、第三方平台、GitHub 社区</p></div>
+  <div class="card">
+    <h3 class="sub">4.1 官方插件市场</h3>
+    <p>Anthropic 提供了官方的插件市场，这是获取高质量 Skill 的首选渠道。</p>
+    <p><strong>访问方式</strong>：在 Claude Code 对话框中输入以下命令打开插件管理：</p>
+    <pre><code>/plugin                      # 打开插件管理界面
+/plugin marketplace add anthropics/skills   # 添加官方市场</code></pre>
+    <table>
+      <tr><th>属性</th><th>详情</th></tr>
+      <tr><td><strong>市场名称</strong></td><td>claude-plugins-official</td></tr>
+      <tr><td><strong>GitHub 仓库</strong></td><td>anthropics/claude-plugins-official</td></tr>
+      <tr><td><strong>Skill 数量</strong></td><td>36+（截至 2025 年 12 月）</td></tr>
+      <tr><td><strong>特色插件</strong></td><td>document-skills（文档处理）、example-skills（示例技能）</td></tr>
+    </table>
+    <p><strong>官方推荐插件</strong>：</p>
+    <table>
+      <tr><th>插件名</th><th>功能描述</th><th>适用场景</th></tr>
+      <tr><td><strong>document-skills</strong></td><td>支持 docx、pdf、pptx、xlsx 等文档的解析和处理</td><td>需要处理办公文档的项目</td></tr>
+      <tr><td><strong>example-skills</strong></td><td>官方示例 Skill 集合，可作为自定义 Skill 的参考</td><td>学习 Skill 编写规范</td></tr>
+    </table>
+    <div class="highlight orange"><strong>⚠️ 注意事项</strong>使用 <code>/plugin</code> 命令需要 Claude Code <strong>1.0.33+</strong> 版本。如果遇到连接问题，请检查网络连接或尝试更新 Claude Code 到最新版本。</div>
+  </div>
+  <div class="card">
+    <h3 class="sub">4.2 第三方 Skill 分享网站</h3>
+    <p>除了官方市场，多个第三方平台也提供丰富的 Skill 资源。</p>
+    <table>
+      <tr><th>网站</th><th>地址</th><th>状态</th><th>Skill 数量</th><th>特点</th></tr>
+      <tr><td><strong>skills.sh</strong></td><td><a href="https://skills.sh" target="_blank" rel="noopener">skills.sh</a></td><td>活跃</td><td>91,030+</td><td>开放生态系统，提供 npx skills CLI 工具，支持多平台</td></tr>
+      <tr><td><strong>agentskill.sh</strong></td><td><a href="https://agentskill.sh" target="_blank" rel="noopener">agentskill.sh</a></td><td>活跃</td><td>107,000+</td><td>最大的 Skill 目录，提供质量评分和安全审计</td></tr>
+      <tr><td><strong>Lobehub Skills</strong></td><td><a href="https://lobehub.com/skills" target="_blank" rel="noopener">lobehub.com/skills</a></td><td>活跃</td><td>285,095+</td><td>规模最大的 Skill 市场之一，支持 Claude、Codex、ChatGPT 多平台</td></tr>
+    </table>
+    <p><strong>使用第三方 Skill</strong>（以 skills.sh 为例）：</p>
+    <pre><code># 安装 skills.sh CLI
+npx skills@latest
+
+# 搜索 Skill
+npx skills search commit-msg
+
+# 安装指定的 Skill
+npx skills install &lt;skill-name&gt;</code></pre>
+    <div class="highlight purple"><strong>💡 小贴士</strong>第三方平台的 Skill 质量参差不齐。建议优先选择有评分、下载量高、最近有更新的 Skill。agentskill.sh 提供安全审计功能，可以帮助你评估 Skill 的可信度。</div>
+  </div>
+  <div class="card">
+    <h3 class="sub">4.3 GitHub 开源社区</h3>
+    <p>GitHub 是发现和分享 Skill 的重要平台。以下是值得关注的热门项目：</p>
+    <table>
+      <tr><th>项目</th><th>Stars</th><th>描述</th></tr>
+      <tr><td><strong>affaan-m/everything-claude-code</strong></td><td>165K</td><td>综合性能优化系统，包含大量实用 Skill</td></tr>
+      <tr><td><strong>anthropics/skills</strong></td><td>123K</td><td>官方 Skills 仓库，权威参考</td></tr>
+      <tr><td><strong>forrestchang/andrej-karpathy-skills</strong></td><td>80.5K</td><td>改进 Claude Code 行为的 Skill 集合</td></tr>
+      <tr><td><strong>JuliusBrussee/caveman</strong></td><td>44.8K</td><td>可减少 65% token 消耗的效率优化 Skill</td></tr>
+      <tr><td><strong>hesreallyhim/awesome-claude-code</strong></td><td>40.6K</td><td>精选 Claude Code 资源列表</td></tr>
+      <tr><td><strong>daymade/claude-code-skills</strong></td><td>19.4K</td><td>专业级 Skill 市场</td></tr>
+      <tr><td><strong>alirezarezvani/claude-skills</strong></td><td>-</td><td>156 个 Skills，支持 7 种工具</td></tr>
+    </table>
+    <p><strong>搜索技巧</strong>：在 GitHub 上搜索 Skill 时，尝试以下关键词组合：</p>
+    <ul>
+      <li><code>claude code skill</code></li>
+      <li><code>claude code plugin</code></li>
+      <li><code>claude skill markdown</code></li>
+      <li><code>claude code skills</code></li>
+    </ul>
+    <div class="highlight purple"><strong>💡 小贴士</strong>Star 数高的项目通常质量更有保障。建议查看项目的 README.md 和最近提交记录，确保项目仍在维护中。</div>
+  </div>
+  <div class="card">
+    <h3 class="sub">4.4 推荐的热门 Skill</h3>
+    <p>以下是经过社区验证、值得优先尝试的热门 Skill：</p>
+    <p><strong>通用效率类</strong>：</p>
+    <table>
+      <tr><th>Skill</th><th>来源</th><th>安装量</th><th>说明</th></tr>
+      <tr><td><strong>find-skills</strong></td><td>skills.sh</td><td>120 万+</td><td>在 Claude Code 内查找和管理 Skill，发现新 Skill 的利器</td></tr>
+      <tr><td><strong>caveman</strong></td><td>GitHub</td><td>-</td><td>极简主义 Skill，可减少 65% 的 token 消耗，适合大型项目</td></tr>
+    </table>
+    <p><strong>前端开发类</strong>：</p>
+    <table>
+      <tr><th>Skill</th><th>来源</th><th>安装量</th><th>说明</th></tr>
+      <tr><td><strong>vercel-react-best-practices</strong></td><td>插件市场</td><td>344.3K</td><td>React 最佳实践，包含组件设计和状态管理规范</td></tr>
+      <tr><td><strong>frontend-design</strong></td><td>插件市场</td><td>330.9K</td><td>前端设计规范和 UI 组件指导</td></tr>
+    </table>
+    <p><strong>文档处理类</strong>：</p>
+    <table>
+      <tr><th>Skill</th><th>来源</th><th>安装量</th><th>说明</th></tr>
+      <tr><td><strong>document-skills</strong></td><td>官方</td><td>-</td><td>支持 docx、pdf、pptx、xlsx 等文档格式解析</td></tr>
+    </table>
+    <p><strong>推荐组合</strong>：</p>
+    <ul>
+      <li><strong>前端开发者</strong>：vercel-react-best-practices + frontend-design + caveman</li>
+      <li><strong>全栈开发者</strong>：commit-msg + document-skills + find-skills + caveman</li>
+      <li><strong>DevOps/运维工程师</strong>：deploy-to-production（自定义） + document-skills + caveman</li>
+    </ul>
+    <div class="highlight orange"><strong>⚠️ 注意事项</strong>安装过多 Skill 会增加 token 消耗。建议保持 <strong>5-10 个核心 Skill</strong>，定期清理不常用的。caveman Skill 可以帮助你优化整体 token 使用效率。</div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">📋</span> 附录</h2><p>字段参考、命令速查、FAQ</p></div>
+  <div class="card">
+    <h3 class="sub">A. SKILL.md Frontmatter 完整字段参考表</h3>
+    <p>以下表格列出了 SKILL.md Frontmatter 中所有可用的配置字段：</p>
+    <table>
+      <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th><th>示例</th></tr>
+      <tr><td><code>name</code></td><td>string</td><td>是</td><td>Skill 的标识名称，用于手动触发</td><td><code>name: commit-msg</code></td></tr>
+      <tr><td><code>description</code></td><td>string</td><td>是</td><td>Skill 的功能描述，用于自动触发匹配</td><td><code>description: 生成 Git 提交信息</code></td></tr>
+      <tr><td><code>tools</code></td><td>array</td><td>否</td><td>Skill 需要的工具权限列表</td><td><code>tools: [Read, Bash, Edit]</code></td></tr>
+      <tr><td><code>allowed-tools</code></td><td>array</td><td>否</td><td>允许使用的工具（更细粒度控制）</td><td><code>allowed-tools: [Read:0, Bash:1]</code></td></tr>
+      <tr><td><code>disable-model-invocation</code></td><td>boolean</td><td>否</td><td>禁用 Claude 自动触发</td><td><code>disable-model-invocation: true</code></td></tr>
+      <tr><td><code>user-invocable</code></td><td>boolean</td><td>否</td><td>是否允许用户手动触发</td><td><code>user-invocable: false</code></td></tr>
+      <tr><td><code>when_to_use</code></td><td>string</td><td>否</td><td>补充触发场景说明（1536 字符限制）</td><td>见 3.1 节示例</td></tr>
+      <tr><td><code>examples</code></td><td>array</td><td>否</td><td>触发示例对话，提升触发准确率</td><td><code>examples: ["帮我写提交信息"]</code></td></tr>
+      <tr><td><code>author</code></td><td>string</td><td>否</td><td>Skill 作者信息</td><td><code>author: your-name</code></td></tr>
+      <tr><td><code>version</code></td><td>string</td><td>否</td><td>Skill 版本号</td><td><code>version: 1.0.0</code></td></tr>
+      <tr><td><code>tags</code></td><td>array</td><td>否</td><td>Skill 标签，便于分类和搜索</td><td><code>tags: [git, workflow]</code></td></tr>
+      <tr><td><code>dependencies</code></td><td>array</td><td>否</td><td>依赖的其他 Skill 或工具</td><td><code>dependencies: [git-cli]</code></td></tr>
+      <tr><td><code>timeout</code></td><td>number</td><td>否</td><td>Skill 执行超时时间（秒）</td><td><code>timeout: 30</code></td></tr>
+      <tr><td><code>max_iterations</code></td><td>number</td><td>否</td><td>最大执行迭代次数</td><td><code>max_iterations: 10</code></td></tr>
+    </table>
+    <p><strong>典型 Frontmatter 示例</strong>：</p>
+    <pre><code>---
+name: code-review
+description: 在需要审查代码质量时自动触发，提供详细的代码审查意见和改进建议
+when_to_use: |
+  - 用户说"帮我审查这段代码"
+  - 提交 Pull Request 前需要代码检查
+  - 需要评估代码质量和潜在问题
+examples:
+  - "帮我 review 这个函数"
+  - "这段代码有什么问题吗"
+  - "审查一下这个 PR"
+tools: [Read, Glob]
+disable-model-invocation: false
+user-invocable: true
+author: team-lead
+version: 1.2.0
+tags: [code-quality, review, workflow]
+---</code></pre>
+  </div>
+  <div class="card">
+    <h3 class="sub">B. 内置斜杠命令速查表</h3>
+    <p><strong>命令管理</strong>：</p>
+    <table>
+      <tr><th>命令</th><th>说明</th></tr>
+      <tr><td><code>/</code></td><td>列出所有可用的斜杠命令和已安装 Skill</td></tr>
+      <tr><td><code>/help</code></td><td>显示帮助信息</td></tr>
+      <tr><td><code>/clear</code></td><td>清除当前对话上下文</td></tr>
+      <tr><td><code>/cost</code></td><td>查看本次会话的 token 消耗和费用</td></tr>
+    </table>
+    <p><strong>Skill 管理</strong>：</p>
+    <table>
+      <tr><th>命令</th><th>说明</th></tr>
+      <tr><td><code>/skills</code></td><td>列出所有已安装的 Skill（含来源和状态）</td></tr>
+      <tr><td><code>/skill &lt;name&gt;</code></td><td>直接触发指定的 Skill</td></tr>
+    </table>
+    <p><strong>插件管理</strong>：</p>
+    <table>
+      <tr><th>命令</th><th>说明</th></tr>
+      <tr><td><code>/plugin</code></td><td>打开图形化插件管理界面</td></tr>
+      <tr><td><code>/plugin list</code></td><td>列出已安装的插件</td></tr>
+      <tr><td><code>/plugin install &lt;插件&gt;</code></td><td>安装指定插件</td></tr>
+      <tr><td><code>/plugin update &lt;插件&gt;</code></td><td>更新指定插件</td></tr>
+      <tr><td><code>/plugin uninstall &lt;插件&gt;</code></td><td>卸载指定插件</td></tr>
+      <tr><td><code>/plugin marketplace add &lt;市场&gt;</code></td><td>添加插件市场源</td></tr>
+      <tr><td><code>/plugin marketplace list</code></td><td>列出已添加的市场源</td></tr>
+    </table>
+    <p><strong>常用内置功能</strong>：</p>
+    <table>
+      <tr><th>命令</th><th>说明</th></tr>
+      <tr><td><code>/debug</code></td><td>触发调试助手，分析代码错误</td></tr>
+      <tr><td><code>/fix</code></td><td>触发修复助手，自动修复代码问题</td></tr>
+      <tr><td><code>/test</code></td><td>触发测试助手，生成或运行测试</td></tr>
+      <tr><td><code>/simplify</code></td><td>简化代码或文本</td></tr>
+      <tr><td><code>/batch</code></td><td>批量处理任务</td></tr>
+      <tr><td><code>/loop</code></td><td>循环执行指定操作</td></tr>
+      <tr><td><code>/claude-api</code></td><td>调用 Claude API 进行高级操作</td></tr>
+    </table>
+    <div class="highlight purple"><strong>💡 小贴士</strong>如果你安装了同名的 Skill，手动触发的优先级遵循 <strong>企业级 &gt; 用户级 &gt; 项目级 &gt; 插件级</strong> 的规则。确保你触发的 Skill 是你期望的那个。</div>
+  </div>
+  <div class="card">
+    <h3 class="sub">C. 常见问题解答（FAQ）</h3>
+    <p><strong>Q1: Skill 和 MCP（Model Context Protocol）有什么区别？</strong></p>
+    <p>Skill 是流程/知识层，定义的是 Claude 如何思考和行动的指南——比如代码审查的步骤、提交信息的格式规范。Skill 是文本指令，告诉 Claude "在什么情况下该做什么"。</p>
+    <p>MCP 是外部连接层，定义的是 Claude 与外部工具和服务交互的协议——比如连接数据库、调用 API、操作文件系统。</p>
+    <p><strong>两者是互补关系</strong>：Skill 决定 "做什么"，MCP 决定 "怎么连接到外部资源"。一个 Skill 可以通过 MCP 工具来完成实际的操作。</p>
+    <p><strong>Q2: 为什么我的 Skill 没有自动触发？</strong></p>
+    <p>最常见的原因是 <code>description</code> 字段不够清晰。Claude 依赖 <code>description</code> 来判断何时触发 Skill。</p>
+    <p><strong>排查步骤</strong>：</p>
+    <ol>
+      <li>检查 <code>description</code> 是否准确描述了触发场景</li>
+      <li>添加 <code>when_to_use</code> 字段补充说明</li>
+      <li>添加 <code>examples</code> 字段提供具体的触发对话示例</li>
+      <li>确保 <code>disable-model-invocation</code> 没有被设置为 true</li>
+      <li>使用 <code>/skills</code> 确认 Skill 已正确安装</li>
+    </ol>
+    <p><strong>Q3: Skill 的优先级怎么确定？</strong></p>
+    <p>当多个同名或功能相似的 Skill 同时存在时，按以下优先级生效：</p>
+    <p><strong>企业级 (Enterprise) &gt; 用户级 (User) &gt; 项目级 (Project) &gt; 插件级 (Plugin)</strong></p>
+    <p>项目级的 Skill 优先级高于全局 Skill，这意味着你可以为不同项目定制专属的 Skill。</p>
+    <p><strong>Q4: 一个项目中可以同时使用多个 Skill 吗？</strong></p>
+    <p>可以。Claude 能够同时自动调用多个 Skill。在一次对话中，Claude 可能会根据上下文自动激活 2-3 个相关的 Skill 协同工作。</p>
+    <p>例如，当你说 "帮我审查这段代码并生成提交信息" 时，Claude 可能同时触发 <code>code-review</code> 和 <code>commit-msg</code> 两个 Skill。</p>
+    <p><strong>Q5: 创建 Skill 需要编程能力吗？</strong></p>
+    <p>不需要。创建 Skill 只需要会用 Markdown 编写文档。基本的 Skill 只需要一个 SKILL.md 文件，包含 Frontmatter 元数据和自然语言的指令内容。</p>
+    <p>当然，如果你想创建更复杂的 Skill（比如调用特定工具、处理复杂逻辑），了解一些基本的 YAML 配置和工具调用语法会有帮助。</p>
+    <p><strong>Q6: Skill 安全吗？</strong></p>
+    <p>Skill 本身是安全的——它只是文本指令，不直接执行代码。Claude 会按照 Skill 中的指导来思考和行动。</p>
+    <p>但需要注意以下几点：</p>
+    <ul>
+      <li><code>allowed-tools</code> 字段要谨慎配置，只授予 Skill 真正需要的工具权限</li>
+      <li>安装来源不明的 Skill 时要审查内容，确保没有不当的操作指令</li>
+      <li>对于有副作用的操作（如部署、删除数据），建议设置 <code>disable-model-invocation: true</code></li>
+    </ul>
+    <p><strong>Q7: 如何分享自己创建的 Skill？</strong></p>
+    <p>分享 Skill 有多种方式：</p>
+    <ol>
+      <li><strong>GitHub</strong>：将 Skill 文件推送到 GitHub 仓库，其他人可以 clone 或下载使用</li>
+      <li><strong>第三方平台</strong>：提交到 skills.sh 或 agentskill.sh 等平台</li>
+      <li><strong>团队共享</strong>：将 Skill 放入项目的 skills/ 目录，通过 Git 与团队成员共享</li>
+    </ol>
+    <p><strong>Q8: 为什么 /plugin 命令打不开市场？</strong></p>
+    <table>
+      <tr><th>原因</th><th>解决方法</th></tr>
+      <tr><td>Claude Code 版本过低</td><td>更新到 1.0.33+ 版本</td></tr>
+      <tr><td>网络连接问题</td><td>检查网络，尝试使用代理</td></tr>
+      <tr><td>市场源未添加</td><td>执行 <code>/plugin marketplace add anthropics/skills</code></td></tr>
+      <tr><td>插件索引加载失败</td><td>重启 Claude Code 后重试</td></tr>
+    </table>
+    <p><strong>Q9: description + when_to_use 为什么被截断？</strong></p>
+    <p>这是 Claude 的性能优化机制。所有 Skill 的 <code>description</code> + <code>when_to_use</code> 文本在加载到 Skill 列表时会被截断至 <strong>1536 个字符</strong>。超出部分不会参与触发匹配。</p>
+    <p><strong>建议</strong>：把最重要的触发关键词和场景描述放在前面，确保在 1536 字符限制内。</p>
+    <p><strong>Q10: 如何监控 Skill 的 token 消耗？</strong></p>
+    <p>使用以下方法监控和优化：</p>
+    <pre><code>/cost                # 查看当前会话的 token 消耗</code></pre>
+    <p><strong>优化建议</strong>：</p>
+    <ul>
+      <li>精简 <code>description</code> 和 <code>when_to_use</code> 文本</li>
+      <li>使用 caveman Skill 减少整体 token 消耗</li>
+      <li>删除不再使用的 Skill</li>
+      <li>对背景知识型 Skill 设置 <code>user-invocable: false</code></li>
+    </ul>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">📋</span> 一页速查</h2><p>可以独立使用的问题 → 结论对照表</p></div>
+  <div class="card">
+    <table>
+      <tr><th>问题</th><th>结论</th></tr>
+      <tr><td>Skill 是什么？</td><td>包含 SKILL.md 的目录，定义"怎么做"的可复用指令模板</td></tr>
+      <tr><td>Skill 的核心特点？</td><td>可复用 · 可分享 · 自动触发</td></tr>
+      <tr><td>Skill 和 Plugin 的区别？</td><td>Skill 是单一能力模块，Plugin 是包含多个 Skill 的容器</td></tr>
+      <tr><td>Skill 和 MCP 的区别？</td><td>Skill 定义流程/知识层，MCP 定义外部连接层</td></tr>
+      <tr><td>Skill 文件放在哪？</td><td>四层：企业级 &gt; 用户级（~/.claude/skills/）&gt; 项目级（.claude/skills/）&gt; 插件级</td></tr>
+      <tr><td>怎么安装别人的 Skill？</td><td>三种方式：手动复制、npx skills 一键安装、安装插件</td></tr>
+      <tr><td>怎么创建自己的 Skill？</td><td>三种方式：手动编写 SKILL.md、让 Claude 生成、使用 /skill-creator</td></tr>
+      <tr><td>SKILL.md 的核心字段？</td><td>description（决定自动触发准确率，前 1536 字符有效）</td></tr>
+      <tr><td>怎么触发 Skill？</td><td>自动匹配（依赖 description）+ 手动斜杠命令（/技能名）</td></tr>
+      <tr><td>怎么控制触发行为？</td><td>disable-model-invocation: true（禁止自动）/ user-invocable: false（仅自动）</td></tr>
+      <tr><td>去哪找更多 Skill？</td><td>官方市场、skills.sh、agentskill.sh、Lobehub、GitHub</td></tr>
+      <tr><td>推荐的热门 Skill？</td><td>find-skills、caveman、vercel-react-best-practices、document-skills</td></tr>
+      <tr><td>怎么监控 token 消耗？</td><td>/cost 查看，精简 description，使用 caveman，清理不用的 Skill</td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-head"><h2><span class="emoji">📖</span> 术语表</h2><p>文中出现的关键概念</p></div>
+  <div class="card">
+    <table>
+      <tr><th>术语</th><th>解释</th></tr>
+      <tr><td><strong>Skill（技能）</strong></td><td>包含 SKILL.md 的目录，定义 Claude 在特定场景下如何行动的可复用指令模板</td></tr>
+      <tr><td><strong>SKILL.md</strong></td><td>Skill 的核心文件，包含 YAML Frontmatter（元数据）和 Markdown 正文（指令）</td></tr>
+      <tr><td><strong>Frontmatter</strong></td><td>SKILL.md 顶部被 --- 包裹的 YAML 元数据区域，定义 Skill 的名称、描述、触发条件等</td></tr>
+      <tr><td><strong>description</strong></td><td>Frontmatter 中最核心的字段，Claude 据此判断何时自动触发 Skill，前 1536 字符有效</td></tr>
+      <tr><td><strong>when_to_use</strong></td><td>补充触发场景说明的字段，追加到 description 后，合计 1536 字符限制</td></tr>
+      <tr><td><strong>Plugin（插件）</strong></td><td>包含多个 Skill 的容器，核心是 plugin.json，安装后内部所有 Skill 同时生效</td></tr>
+      <tr><td><strong>MCP（Model Context Protocol）</strong></td><td>模型上下文协议，定义 Claude 与外部工具和服务交互的标准</td></tr>
+      <tr><td><strong>自动触发</strong></td><td>Claude 根据用户输入与 Skill description 的语义匹配自动激活 Skill</td></tr>
+      <tr><td><strong>手动触发</strong></td><td>通过斜杠命令（如 /commit-msg）主动激活指定 Skill</td></tr>
+      <tr><td><strong>渐进式加载</strong></td><td>为节省 token，Claude 采用三级加载策略：Level 1（Frontmatter）→ Level 2（正文）→ Level 3（附加文件）</td></tr>
+      <tr><td><strong>斜杠命令</strong></td><td>以 / 开头的命令，用于手动触发 Skill 或执行内置功能</td></tr>
+      <tr><td><strong>优先级</strong></td><td>企业级 &gt; 用户级 &gt; 项目级 &gt; 插件级，同名 Skill 按此顺序覆盖</td></tr>
+      <tr><td><strong>skills.sh</strong></td><td>第三方 Skill 分享平台，提供 npx skills CLI 工具</td></tr>
+      <tr><td><strong>agentskill.sh</strong></td><td>最大的 Skill 目录，提供质量评分和安全审计</td></tr>
+      <tr><td><strong>caveman</strong></td><td>极简主义 Skill，可减少 65% 的 token 消耗</td></tr>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <p>📄 本笔记根据 PDF 文章整理 · 原文无配图</p>
+  <p>原始文档：<a href="original/claude-code-skill-guide.pdf" target="_blank" rel="noopener">《Claude Code Skill 完全指南》（PDF · 32 页）</a></p>
+  <p>作者：<strong>@我是阿众</strong>（全网同名） · 2026 年 4 月</p>
+  <p>内容版权归原作者所有，本页仅作学习笔记与二次整理</p>
+  <div class="series-nav">
+    <div class="label">🔗 相关主题</div>
+    <div class="links">
+      <a href="../agent-skill/">一文讲透 Agent Skill</a>
+      <a href="../agent-from-scratch/">Agent 概念与构建模式</a>
+      <a href="../context-engineering/">Context Engineering 深度解析</a>
+      <a href="../harness-engineering/">Harness Engineering 到底是什么？</a>
+    </div>
+  </div>
+  <p><a href="../">← 返回知识库首页</a></p>
+</footer>
+
+</body>
+</html>

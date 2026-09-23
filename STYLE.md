@@ -19,7 +19,7 @@
 | `token-embedding/` | **B v3** | 追加 `.timeline`、`.overview-grid` |
 | `mcp-basics/` `mcp-advanced/` `harness-engineering/` `rag-python/` `context-engineering/` | **B v3** | 新增主题，CSS 与参考实装逐字节一致 |
 
-**Template B v3 是本规范的基准，十个主题现已全部统一。** 详见 §7。
+**Template B v3 是本规范的基准，十一个主题现已全部统一。** 详见 §7。
 
 从本文件开始，格式不再依赖「复制上一份制品」。
 
@@ -524,7 +524,7 @@ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
 
 ## 7. 模板统一状态
 
-**十个主题已全部统一到 Template B v3**，不再存在偏差：
+**十一个主题已全部统一到 Template B v3**，不再存在偏差：
 
 | 主题 | 状态 |
 |------|------|
@@ -538,6 +538,7 @@ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
 | `rag-python/` | ✅ B v3 |
 | `context-engineering/` | ✅ B v3 |
 | `agent-from-scratch/` | ✅ B v3（含可选 `original/` 原始文档） |
+| `claude-code-skill-guide/` | ✅ B v3（含可选 `original/` 原始文档） |
 
 迁移方式：把 `token-embedding/index.html` 的 `<style>` 块**原样注入**（保证与规范逐字节一致），正文按下面的映射改写。
 
