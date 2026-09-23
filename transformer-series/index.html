@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>破解 Transformer 系列 — 从原理到实战</title>
+<meta name="description" content="系统性学习 Transformer 架构：从 Self-Attention 原理、位置编码、多头注意力，到 Encoder-Decoder 结构与实战应用。视频系列配套笔记，按顺序学习。">
+<style>
+  :root {
+    --bg: #fafaf7;
+    --card: #ffffff;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --orange: #d97706;
+    --orange-light: #fef3c7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --purple: #7c3aed;
+    --purple-light: #ede9fe;
+    --text: #1f2937;
+    --text-dim: #6b7280;
+    --text-dimmer: #9ca3af;
+    --border: #e5e7eb;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+    color: white;
+    padding: 60px 24px 50px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: clamp(26px, 4.6vw, 40px);
+    font-weight: 800;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+  .hero p {
+    font-size: clamp(15px, 2.5vw, 18px);
+    opacity: 0.9;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .hero .meta {
+    margin-top: 20px;
+    font-size: 14px;
+    opacity: 0.75;
+  }
+
+  /* Layout */
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
+  section { padding: 48px 0; }
+  section + section { border-top: 1px solid var(--border); }
+
+  /* Section headers */
+  .sec-head { margin-bottom: 28px; }
+  .sec-head h2 {
+    font-size: clamp(22px, 4vw, 28px);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .sec-head h2 .emoji { font-size: 1.2em; }
+  .sec-head p { color: var(--text-dim); font-size: 15px; }
+
+  /* Sub heading */
+  h3.sub {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 26px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  /* Highlight boxes */
+  .highlight {
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin: 16px 0;
+    border-left: 4px solid;
+  }
+  .highlight.blue { background: var(--accent-light); border-color: var(--accent); }
+  .highlight.green { background: var(--green-light); border-color: var(--green); }
+  .highlight.orange { background: var(--orange-light); border-color: var(--orange); }
+  .highlight.red { background: var(--red-light); border-color: var(--red); }
+  .highlight.purple { background: var(--purple-light); border-color: var(--purple); }
+  .highlight strong { display: block; margin-bottom: 6px; }
+
+  /* Video embed */
+  .video-embed {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+    margin: 20px 0;
+  }
+  .video-embed iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border: none;
+  }
+
+  /* Episode list */
+  .episode-nav {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 32px;
+  }
+  .episode-nav h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text-dim);
+  }
+  .episode-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+  .episode-list li {
+    font-size: 14px;
+  }
+  .episode-list a {
+    color: var(--accent);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+  .episode-list a:hover { background: var(--accent-light); }
+  .episode-list .current {
+    background: var(--accent-light);
+    font-weight: 600;
+  }
+  .episode-list .upcoming {
+    color: var(--text-dimmer);
+    cursor: default;
+  }
+
+  /* Key points */
+  .key-point {
+    display: flex;
+    gap: 14px;
+    margin: 16px 0;
+    padding: 16px;
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .key-point .num {
+    flex-shrink: 0;
+    width: 32px; height: 32px;
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .key-point .content { flex: 1; }
+  .key-point h4 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .key-point p { font-size: 14px; color: var(--text-dim); }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 28px;
+    margin: 20px 0;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -24px; top: 6px;
+    width: 12px; height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  .timeline-item h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .timeline-item p {
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+
+  /* Footer */
+  footer {
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    padding: 32px 24px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .hero { padding: 40px 16px 36px; }
+    section { padding: 32px 0; }
+    .card { padding: 18px; }
+    .episode-list { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <h1>🧠 破解 Transformer 系列</h1>
+  <p>从 Self-Attention 到 Encoder-Decoder，系统性掌握 Transformer 架构原理与实战应用</p>
+  <div class="meta">视频系列：忠厚老实的老王 · 配套图文笔记 · 持续更新中</div>
+</div>
+
+<!-- Episode Navigation -->
+<div class="wrap" style="padding-top: 40px;">
+  <div class="episode-nav">
+    <h3>📚 系列目录</h3>
+    <ul class="episode-list">
+      <li><a href="#ep01" class="current">第 1 讲 · 开篇：为什么需要 Transformer</a></li>
+      <li><a class="upcoming">第 2 讲 · 即将更新</a></li>
+      <li><a class="upcoming">第 3 讲 · 即将更新</a></li>
+      <li><a class="upcoming">第 4 讲 · 即将更新</a></li>
+      <li><a class="upcoming">第 5 讲 · 即将更新</a></li>
+    </ul>
+  </div>
+</div>
+
+<!-- Episode 01 -->
+<section id="ep01">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2><span class="emoji">📺</span> 第 1 讲 · 开篇：为什么需要 Transformer</h2>
+      <p>理解 Transformer 出现的背景、解决的核心问题，以及本系列的学习路线</p>
+    </div>
+
+    <!-- Video Embed -->
+    <div class="card">
+      <div class="video-embed">
+        <iframe src="//player.bilibili.com/player.php?bvid=BV1pRWRzqEVf&high_quality=1&danmaku=0" allowfullscreen></iframe>
+      </div>
+      <div style="margin-top: 12px; font-size: 14px; color: var(--text-dim);">
+        <strong>视频信息</strong> · UP主：忠厚老实的老王 · 时长：约 15 分钟 · 
+        <a href="https://www.bilibili.com/video/BV1pRWRzqEVf" target="_blank">在 B 站观看</a>
+      </div>
+    </div>
+
+    <!-- 30-second overview -->
+    <div class="highlight blue">
+      <strong>⏱ 30 秒总览</strong>
+      本讲是 Transformer 系列的开篇，主要回答三个问题：<strong>为什么需要 Transformer？它解决了什么问题？本系列如何展开？</strong>视频从传统序列模型（RNN/LSTM）的局限性出发，引出 Transformer 的核心创新——Self-Attention 机制，并概述了 Transformer 在 NLP、CV 等领域的革命性影响。
+    </div>
+
+    <!-- Key Points -->
+    <h3 class="sub">🎯 核心知识点</h3>
+
+    <div class="key-point">
+      <div class="num">1</div>
+      <div class="content">
+        <h4>序列建模的演进</h4>
+        <p>从 RNN → LSTM/GRU → Seq2Seq，序列模型逐步解决了长距离依赖问题，但<strong>无法并行计算</strong>成为瓶颈。训练速度慢、难以利用 GPU 加速，限制了模型规模和数据量的扩展。</p>
+      </div>
+    </div>
+
+    <div class="key-point">
+      <div class="num">2</div>
+      <div class="content">
+        <h4>Transformer 的核心突破</h4>
+        <p>2017 年 Google 提出 Transformer，用 <strong>Self-Attention</strong> 完全替代循环结构。关键优势：① 并行计算（训练速度大幅提升）；② 直接建模全局依赖（任意两个位置直接交互）；③ 可扩展性强（支撑了 GPT、BERT 等大模型）。</p>
+      </div>
+    </div>
+
+    <div class="key-point">
+      <div class="num">3</div>
+      <div class="content">
+        <h4>Self-Attention 的直觉</h4>
+        <p>核心思想：对于序列中的每个位置，计算它与所有其他位置的"相关性"（注意力权重），然后加权聚合信息。这样每个 token 都能"看到"整个序列，而不是像 RNN 那样只能逐步传递。</p>
+      </div>
+    </div>
+
+    <div class="key-point">
+      <div class="num">4</div>
+      <div class="content">
+        <h4>Transformer 的应用版图</h4>
+        <p>从 NLP（机器翻译、文本生成、问答）扩展到 CV（图像分类、目标检测）、多模态（CLIP、DALL-E）、语音（Whisper）等领域。Transformer 已成为深度学习的<strong>基础架构</strong>。</p>
+      </div>
+    </div>
+
+    <!-- Learning Roadmap -->
+    <h3 class="sub">🗺 本系列学习路线</h3>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <h4>第 1 讲 · 开篇（本讲）</h4>
+        <p>背景动机、核心思想概览、系列结构介绍</p>
+      </div>
+      <div class="timeline-item">
+        <h4>第 2 讲 · Self-Attention 详解</h4>
+        <p>Q/K/V 矩阵、注意力计算公式、缩放因子的作用</p>
+      </div>
+      <div class="timeline-item">
+        <h4>第 3 讲 · 多头注意力与位置编码</h4>
+        <p>Multi-Head Attention、Positional Encoding、为什么需要位置信息</p>
+      </div>
+      <div class="timeline-item">
+        <h4>第 4 讲 · Encoder-Decoder 结构</h4>
+        <p>完整的 Transformer 架构、残差连接、Layer Normalization</p>
+      </div>
+      <div class="timeline-item">
+        <h4>第 5 讲 · 实战：从零实现 Transformer</h4>
+        <p>用 PyTorch 手写 Transformer、训练机器翻译模型</p>
+      </div>
+    </div>
+
+    <!-- Common misconceptions -->
+    <h3 class="sub">⚠️ 常见误区澄清</h3>
+
+    <div class="highlight orange">
+      <strong>误区 1：Transformer 只能处理文本</strong>
+      虽然 Transformer 起源于 NLP，但其核心思想（全局注意力机制）适用于任何序列数据。图像可以被展平为 patch 序列，音频可以是帧序列，甚至图结构数据也有 Graph Transformer 变体。
+    </div>
+
+    <div class="highlight orange">
+      <strong>误区 2：Self-Attention 计算量太大，不实用</strong>
+      标准 Self-Attention 确实是 O(n²) 复杂度，但实际应用中通过分块计算、稀疏注意力（如 Longformer）、线性注意力等优化手段，已经可以处理数万 token 的长序列。
+    </div>
+
+    <div class="highlight orange">
+      <strong>误区 3：Transformer 完全取代了 RNN</strong>
+      在某些场景下（如流式处理、极低延迟要求），RNN 仍有优势。Transformer 更适合离线批量处理和长序列建模，两者是互补关系而非完全替代。
+    </div>
+
+    <!-- Summary -->
+    <div class="highlight green">
+      <strong>✅ 本讲小结</strong>
+      Transformer 的出现解决了序列建模的并行化瓶颈，通过 Self-Attention 机制实现了全局依赖的直接建模。本系列将从原理到实战，逐步拆解 Transformer 的每个组件。下一讲将深入 Self-Attention 的数学细节。
+    </div>
+
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <p>
+    视频来源：<a href="https://space.bilibili.com/287989852" target="_blank">忠厚老实的老王</a> · 
+    笔记整理：<a href="https://github.com/ytwangdongsheng/knowledge-hub" target="_blank">knowledge-hub</a>
+  </p>
+  <p style="margin-top: 8px;">
+    <a href="https://ytwangdongsheng.github.io/knowledge-hub/">← 返回首页</a>
+  </p>
+</footer>
+
+</body>
+</html>
